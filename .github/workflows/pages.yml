@@ -1,5 +1,5 @@
 # Builds every game in games/*/ and deploys the GitHub Pages site.
-# A game folder needs game.json. engine "love" -> tools/build-love.sh; anything else -> its own build.sh <out-dir>.
+# Any engine, any genre: each game folder builds via LÖVE helper, its own build.sh, or a prebuilt/ folder.
 name: Build and deploy
 
 on:
@@ -34,24 +34,10 @@ jobs:
           curl -sSL -o love.zip "https://github.com/love2d/love/releases/download/${LOVE_VERSION}/love-${LOVE_VERSION}-win64.zip"
           unzip -q love.zip
 
-      - name: Build every game
+      - name: Build every game (any engine, see tools/build-all.sh)
         env:
           WEB: "1"
-        run: |
-          export LOVE_WIN="$PWD/love-${LOVE_VERSION}-win64"
-          for dir in games/*/; do
-            slug="$(basename "$dir")"
-            engine="$(jq -r '.engine // empty' "$dir/game.json")"
-            echo "::group::$slug ($engine)"
-            if [ "$engine" = "love" ]; then
-              bash tools/build-love.sh "$dir" "dist/$slug"
-            elif [ -f "$dir/build.sh" ]; then
-              bash "$dir/build.sh" "dist/$slug"
-            else
-              echo "no build for $slug"
-            fi
-            echo "::endgroup::"
-          done
+        run: LOVE_WIN="$PWD/love-${LOVE_VERSION}-win64" bash tools/build-all.sh dist
 
       - name: Assemble site
         run: bash tools/assemble-site.sh dist _site && ls -R _site | head -60

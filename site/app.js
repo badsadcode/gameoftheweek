@@ -33,6 +33,14 @@ function daysUntil(iso) {
 }
 
 // ---------------------------------------------------------------- pieces
+// genre + engine chips: every week can be a different genre in a different engine
+function tags(game) {
+  const t = [];
+  for (const g of String(game.genre || "").split("·").map((x) => x.trim()).filter(Boolean)) t.push(`<span class="tag genre">🎭 ${esc(g)}</span>`);
+  if (game.engine_label || game.engine) t.push(`<span class="tag engine">🔧 Made with ${esc(game.engine_label || game.engine)}</span>`);
+  return t.length ? `<div class="tags">${t.join("")}</div>` : "";
+}
+
 function bulbs(n) {
   n = Math.max(0, Math.min(5, n || 0));
   return "💡".repeat(n) + "🔌".repeat(5 - n);
@@ -64,7 +72,8 @@ function gameCard(game, { withDevlog = true, ribbon } = {}) {
     </div>
     <div class="game-body">
       <h3 class="marker">${esc(game.title)}</h3>
-      <p class="theme">Theme: <b>${esc(game.theme)}</b> · ${esc(game.tagline)}</p>
+      <p class="theme">Theme: <b>${esc(game.theme)}</b>${game.tagline ? " · " + esc(game.tagline) : ""}</p>
+      ${tags(game)}
       <p>${esc(game.pitch)}</p>
       ${progressTrack(game)}
       <div class="meter"><span>Bad Idea Rating:</span><span class="bulbs" aria-label="${game.bad_idea_rating} out of 5">${bulbs(game.bad_idea_rating)}</span><span>(${esc(game.bad_idea_note)})</span></div>
@@ -125,6 +134,7 @@ async function renderHome() {
   const devlog = await getJSON(`games/${current.slug}/devlog.json`, []);
 
   const streamed = games.filter((g) => g.youtube_video_id).length;
+  const engines = new Set(games.map((g) => g.engine_label || g.engine).filter(Boolean)).size;
   let entries = devlog.length;
   if (past.length) {
     const others = await Promise.all(past.map((g) => getJSON(`games/${g.slug}/devlog.json`, [])));
@@ -133,6 +143,7 @@ async function renderHome() {
   $("#stats").innerHTML = `
     <div class="stat"><b>${games.length}</b><span>game${games.length === 1 ? "" : "s"} made</span></div>
     <div class="stat"><b>${streamed}</b><span>Friday stream${streamed === 1 ? "" : "s"} so far</span></div>
+    <div class="stat"><b>${engines}</b><span>engine${engines === 1 ? "" : "s"} used (no favourites)</span></div>
     <div class="stat"><b>${entries}</b><span>devlog confessions</span></div>
     <div class="stat"><b>100%</b><span>of bad ideas approved (worrying)</span></div>`;
 
@@ -149,7 +160,7 @@ async function renderHome() {
       <div class="mini-body">
         <span class="chip day">Week ${g.week}</span>
         <h4 class="marker">${esc(g.title)}</h4>
-        <p>${esc(g.theme)}</p>
+        <p>${esc(g.theme)}${g.genre ? " · " + esc(g.genre.split("·")[0].trim()) : ""}${g.engine_label ? " · " + esc(g.engine_label) : ""}</p>
         <span class="mini-status">${g.youtube_video_id ? "📺 Streamed" : "🎮 Playable"}</span>
       </div>
     </a>`).join("") + `
