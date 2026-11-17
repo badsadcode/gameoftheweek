@@ -130,11 +130,11 @@ func _build_hud() -> void:
 	# what to do next + boxes on the way (guide.gd)
 	goal_label = lbl("", 18, C_GOLD)
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	goal_label.custom_minimum_size = Vector2(300, 0)
+	goal_label.custom_minimum_size = Vector2(280, 0)
 	v.add_child(goal_label)
 	deliv_label = lbl("", 15, Color(0.75, 0.8, 0.9))
 	deliv_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	deliv_label.custom_minimum_size = Vector2(300, 0)
+	deliv_label.custom_minimum_size = Vector2(280, 0)
 	v.add_child(deliv_label)
 
 	var tr := PanelContainer.new()
@@ -178,8 +178,8 @@ func _build_hud() -> void:
 
 	toast_box = VBoxContainer.new()
 	toast_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	toast_box.position = Vector2(-380, 110)
-	toast_box.custom_minimum_size = Vector2(760, 0)
+	toast_box.position = Vector2(-310, 110)
+	toast_box.custom_minimum_size = Vector2(620, 0)
 	toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.add_child(toast_box)
 
@@ -211,7 +211,7 @@ func toast(text: String, color := C_TEXT, dur := 4.0) -> void:
 	var l := lbl(text, 22, color)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(760, 0)
+	l.custom_minimum_size = Vector2(620, 0)
 	toast_box.add_child(l)
 	if toast_box.get_child_count() > 4: toast_box.get_child(0).queue_free()
 	var tw := create_tween()

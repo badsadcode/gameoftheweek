@@ -6,6 +6,8 @@
 You inherited your grandfather's general store in an old, slightly peculiar town.
 Running the shop should feel normal. The world around it becomes increasingly impossible.
 
+![3 AM, Wednesday](screenshot-3am.png)
+
 ## Controls
 
 | Key | Action |

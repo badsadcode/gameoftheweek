@@ -782,12 +782,12 @@ func _regulars() -> void:
 # --------------------------------------------------------------------------- juice
 ## "+$12" floats up from the till and a few coins hop out
 func _pop_money(amount: int) -> void:
-	var at := Vector3(-4.6, 1.55, 2.05)
+	var at := Vector3(-4.6, 1.5, 2.05)
 	var l := Vox.label(world, ("+$%d" % amount) if amount >= 0 else ("-$%d" % -amount), at, 56, UI.C_GOLD if amount >= 0 else UI.C_RED, true)
 	l.no_depth_test = true
 	var tw := l.create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(l, "position", at + Vector3(0, 0.7, 0), 1.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(l, "position", at + Vector3(0, 0.4, 0), 1.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(l, "modulate:a", 0.0, 1.3).set_delay(0.4)
 	tw.chain().tween_callback(l.queue_free)
 	if amount <= 0: return
@@ -819,10 +819,17 @@ func _start_night_walk(lines: Array) -> void:
 	# something at the far end of the street
 	walk_figure = VoxelPerson.new()
 	add_child(walk_figure)
-	walk_figure.build({ "skin": Color(0.05, 0.04, 0.07), "shirt": Color(0.04, 0.03, 0.06), "pants": Color(0.03, 0.03, 0.05),
-		"coat": Color(0.06, 0.04, 0.09), "eyes": Color(0.85, 0.4, 1.0), "weird": ["glow_eyes", "long_arms"], "height": 1.5, "width": 0.9 })
-	walk_figure.position = Vector3(-15.5, 0, 10.8)
+	walk_figure.build({ "skin": Color(0.16, 0.13, 0.2), "shirt": Color(0.1, 0.08, 0.13), "pants": Color(0.08, 0.07, 0.1),
+		"coat": Color(0.13, 0.1, 0.17), "eyes": Color(0.85, 0.4, 1.0), "weird": ["glow_eyes", "long_arms"], "height": 1.5, "width": 0.9 })
+	walk_figure.position = Vector3(-10.5, 0, 10.2)
 	walk_figure.rotation.y = -PI / 2
+	# a dim purple light from the street side: you see the shape, not the details
+	var glow := OmniLight3D.new()
+	walk_figure.add_child(glow)
+	glow.global_position = walk_figure.position + Vector3(3.0, 2.2, -1.5)
+	glow.light_color = Color(0.7, 0.4, 1.0)
+	glow.light_energy = 2.5
+	glow.omni_range = 7.0
 	Sfx.play("knock", 1.0, 0.8)
 	ui.toast("03:07. Someone is knocking on the front door. Three times.", UI.C_PURPLE, 6.0)
 
@@ -1123,7 +1130,7 @@ func _ui_shots() -> void:
 	day = 3
 	_start_night_walk([])
 	player.global_position = Vector3(0.0, 0, 6.6)
-	player.rotation.y = 1.84
+	player.rotation.y = 1.90
 	player.cam.rotation.x = 0.02
 	await snap.call("night_walk")
 	night_walk = false
