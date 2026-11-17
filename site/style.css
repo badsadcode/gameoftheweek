@@ -318,3 +318,5 @@ a.mini:hover { transform: translateY(-4px) rotate(-.5deg); }
 .tag { font-size: .82rem; font-weight: 800; padding: 4px 11px; border-radius: 999px; }
 .tag.genre { background: rgba(255, 201, 60, .14); color: var(--caution); border: 1px solid rgba(255, 201, 60, .4); }
 .tag.engine { background: rgba(143, 211, 255, .12); color: var(--frost); border: 1px solid rgba(143, 211, 255, .4); }
+
+.entry img.devlog-shot { width: 100%; border-radius: 8px; margin: 6px 0 10px; border: 1px solid rgba(0, 0, 0, .15); box-shadow: 0 6px 14px rgba(0, 0, 0, .25); }

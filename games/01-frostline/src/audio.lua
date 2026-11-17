@@ -125,6 +125,26 @@ local function build()
       return (math.sin(TAU * 2600 * t + math.sin(t * 40)) * 0.15 + lp(noise()) * 0.3) * math.min(1, t * 10) * math.exp(-t * 3)
     end) end
 
+  do local o = osc()
+    d.howl = render(1.6, function(t, u)
+      local f = 420 + 160 * math.sin(math.min(1, t / 0.5) * math.pi * 0.5) - 120 * math.max(0, t - 0.9)
+      return o(f + math.sin(t * 30) * 6) * math.min(1, t * 6) * math.min(1, (1.6 - t) * 2.5) * 0.28
+    end) end
+
+  do local lp = lowpass(0.02)
+    d.rumble = render(2.5, function(t, u)
+      return lp(noise()) * 9 * math.min(1, t * 2) * math.min(1, (2.5 - t) * 1.5)
+    end) end
+
+  do local lp = lowpass(0.12)
+    d.boom = render(1.2, function(t)
+      return (lp(noise()) * 3.5 + math.sin(TAU * (60 - 30 * t) * t) * 0.8) * math.exp(-t * 4)
+    end) end
+
+  d.harpoon = render(0.35, function(t)
+    return (math.sin(TAU * 900 * t * (1 - t)) * 0.4 + noise() * 0.3) * math.exp(-t * 9)
+  end)
+
   return d
 end
 

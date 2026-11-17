@@ -3,10 +3,13 @@
 --   snatcher -> kidnaps passengers
 --   saboteur -> uncouples cars (lose the passenger car = game over)
 --   brute    -> hunts YOU
+--   wolf     -> (hazard) runs alongside, leaps onto the platforms and goes for the passengers
 local T = require("train")
 local U = require("util")
 local Audio = require("audio")
 local Particles = require("particles")
+local Passengers = require("passengers")
+local Upgrades = require("upgrades")
 
 local Raiders = {}
 Raiders.SLED_Y = 690
@@ -16,7 +19,19 @@ Raiders.TYPES = {
   snatcher = { hp = 2, speed = 150, dmg = 8,  windup = 0.45, cooldown = 1.0, scale = 1.0, scarf = { 0.30, 0.90, 0.55 }, label = "Snatcher" },
   saboteur = { hp = 3, speed = 130, dmg = 10, windup = 0.45, cooldown = 1.0, scale = 1.0, scarf = { 0.95, 0.25, 0.20 }, label = "Saboteur" },
   brute    = { hp = 5, speed = 165, dmg = 16, windup = 0.6,  cooldown = 1.2, scale = 1.3, scarf = { 0.70, 0.40, 0.95 }, label = "Brute" },
+  wolf     = { hp = 1, speed = 230, dmg = 6,  windup = 0.3,  cooldown = 0.8, scale = 1.0, scarf = { 0.6, 0.6, 0.65 },  label = "Wolf" },
 }
+
+-- scrap each kind drops when thrown off
+local SCRAP = { thief = 1, snatcher = 1, saboteur = 2, brute = 4, wolf = 1 }
+
+-- seconds a raider must work to finish its job (perks and upgrades change these)
+function Raiders.workNeed(G, r)
+  if r.kind == "saboteur" then return Upgrades.has(G, "couplings") and 24 or 12 end
+  if r.kind == "snatcher" then return Passengers.has(G, "sergei") and 13 or 6.5 end
+  if r.kind == "wolf" then return Passengers.has(G, "sergei") and 14 or 7 end
+  return 1.7
+end
 
 function Raiders.init(G)
   G.sleds, G.raiders = {}, {}
@@ -38,38 +53,64 @@ local function roofSpotNear(x)
   return x
 end
 
-function Raiders.spawnSled(G, i)
-  local kind = pickType(G.progress)
+-- where a raider of this kind wants to land; fills s.landX, s.landY, s.gap
+function Raiders.planLanding(G, s)
+  local kind = s.kind
+  local function floorGap(g)
+    g = math.max(g, T.firstAttached)
+    if T.blockedGap == g then -- buried in snow: land on the roof next to it instead
+      s.landX, s.landY = T.cars[g].x + T.CAR_W - 30, T.ROOF_Y
+    else
+      s.landX, s.landY = T.gapCenter(g), T.FLOOR_Y
+    end
+  end
+  if kind == "thief" then
+    floorGap(3)
+  elseif kind == "snatcher" or kind == "wolf" then
+    floorGap((T.firstAttached == 1 and love.math.random() < 0.5) and 1 or 2)
+  elseif kind == "saboteur" then
+    s.gap = love.math.random(T.firstAttached, 3)
+    floorGap(s.gap)
+  else
+    s.offset = s.offset or U.rand(-180, 180)
+    s.landY = T.ROOF_Y
+    s.landX = roofSpotNear(G.player.x + s.offset)
+  end
+end
+
+function Raiders.spawnSled(G, i, kind)
+  kind = kind or pickType(G.progress)
   local s = {
     kind = kind, x = T.minX() - 280 - (i - 1) * 170, bob = love.math.random() * 6,
     speed = 58 + G.progress * 42 + U.rand(-6, 12), empty = false,
   }
-  if kind == "thief" then
-    s.landX, s.landY = T.gapCenter(3), T.FLOOR_Y
-  elseif kind == "snatcher" then
-    local g = (T.firstAttached == 1 and love.math.random() < 0.5) and 1 or 2
-    s.landX, s.landY = T.gapCenter(g), T.FLOOR_Y
-  elseif kind == "saboteur" then
-    s.gap = love.math.random(T.firstAttached, 3)
-    s.landX, s.landY = T.gapCenter(s.gap), T.FLOOR_Y
-  else
-    s.offset = U.rand(-180, 180)
-    s.landY = T.ROOF_Y
-    s.landX = roofSpotNear(G.player.x + s.offset)
-  end
+  if kind == "wolf" then s.speed = 92 + G.progress * 20 + U.rand(-5, 10); s.x = T.minX() - 240 - (i - 1) * 90 end
+  Raiders.planLanding(G, s)
   G.sleds[#G.sleds + 1] = s
 end
 
-function Raiders.board(G, s)
+function Raiders.spawnWolves(G, n)
+  for i = 1, n do Raiders.spawnSled(G, i, "wolf") end
+end
+
+-- the Iron Jaw launches raiders straight from its deck
+function Raiders.deployFromBoss(G, x)
+  local s = { kind = U.pick({ { "thief", 2 }, { "saboteur", 2 }, { "brute", 2 } }), x = x, empty = false }
+  Raiders.planLanding(G, s)
+  Raiders.board(G, s, 600)
+end
+
+function Raiders.board(G, s, fromY)
   local def = Raiders.TYPES[s.kind]
+  fromY = fromY or (Raiders.SLED_Y - 30)
   G.raiders[#G.raiders + 1] = {
     kind = s.kind, state = "jump", jt = 0,
-    fromX = s.x, fromY = Raiders.SLED_Y - 30, toX = s.landX, toY = s.landY,
-    x = s.x, y = Raiders.SLED_Y - 30, vx = 0, vy = 0, onGround = false, climbing = false, facing = 1,
+    fromX = s.x, fromY = fromY, toX = s.landX, toY = s.landY,
+    x = s.x, y = fromY, vx = 0, vy = 0, onGround = false, climbing = false, facing = 1,
     hp = def.hp, scale = def.scale, stun = 0, windup = 0, atkCD = 0.6, work = 0, loot = 0, anim = 0,
     gap = s.gap, offset = U.rand(-40, 40), hurtT = 0, rot = 0, provoked = 0,
   }
-  Audio.play("jump", 0.4, 0.8)
+  if s.kind == "wolf" then Audio.play("grunt", 0.4, 1.6) else Audio.play("jump", 0.4, 0.8) end
 end
 
 function Raiders.leave(G, r, msg, color)
@@ -84,9 +125,12 @@ function Raiders.kill(G, r, dir)
   r.climbing = false
   r.vx, r.vy = dir * 260, -460
   G.stats.kills = G.stats.kills + 1
-  if r.loot > 0 or love.math.random() < 0.5 then
-    G.items[#G.items + 1] = { x = r.x, y = r.onGround and r.y or T.FLOOR_Y, amount = r.loot > 0 and r.loot + 1 or 2, t = 0 }
+  local y = r.onGround and r.y or T.FLOOR_Y
+  if r.kind ~= "wolf" and (r.loot > 0 or love.math.random() < 0.45) then
+    G.items[#G.items + 1] = { kind = "coal", x = r.x, y = y, amount = r.loot > 0 and r.loot + 1 or 2, t = 0 }
   end
+  local scrap = (SCRAP[r.kind] or 1) + (Passengers.has(G, "whiskers") and 1 or 0)
+  G.items[#G.items + 1] = { kind = "scrap", x = r.x + 18 * dir, y = y, amount = scrap, t = 0.5 }
 end
 
 function Raiders.damage(G, r, dmg, dir)
@@ -188,7 +232,8 @@ function Raiders.think(G, r, dt)
   end
 
   local sameLevel = math.abs(P.y - r.y) < 44 and not P.climbing
-  local aggro = r.kind == "brute" or r.provoked > 0 or (sameLevel and math.abs(dx) < 120)
+  local aggro = r.kind == "brute" or r.provoked > 0 or (sameLevel and math.abs(dx) < (r.kind == "wolf" and 200 or 120))
+  if r.kind == "wolf" and not sameLevel then aggro = false end -- wolves can't climb
   local spd = def.speed
 
   if aggro and P.health > 0 then
@@ -220,16 +265,18 @@ function Raiders.think(G, r, dt)
         if r.loot >= 5 or G.coal <= 0 then Raiders.leave(G, r, "A thief got away with " .. r.loot .. " coal!") end
       end
     end
-  elseif r.kind == "snatcher" then
+  elseif r.kind == "snatcher" or r.kind == "wolf" then
+    if T.firstAttached > 2 then Raiders.leave(G, r); return end
     if navigate(G, r, T.STOVE_X + (r.offset > 0 and 90 or -90) + r.offset * 0.5, "floor", spd, dt) then
       r.work = r.work + dt
-      if r.work >= 6.5 then
-        if G.passengers > 0 then
-          G.passengers = G.passengers - 1
-          G.stats.taken = G.stats.taken + 1
-          r.hasPassenger = true
-          Raiders.leave(G, r, "A passenger was snatched!")
+      if r.kind == "wolf" and love.math.random() < dt * 2 then Audio.play("grunt", 0.3, 1.7) end
+      if r.work >= Raiders.workNeed(G, r) then
+        if r.kind == "wolf" then
+          Passengers.loseRandom(G, "mauled")
+          Raiders.leave(G, r)
         else
+          local p = Passengers.loseRandom(G, "taken")
+          if p then G.stats.taken = G.stats.taken + 1; r.hasPassenger = true end
           Raiders.leave(G, r)
         end
       end
@@ -237,11 +284,12 @@ function Raiders.think(G, r, dt)
   elseif r.kind == "saboteur" then
     if r.gap < T.firstAttached then r.gap = T.firstAttached; r.work = 0 end
     if navigate(G, r, T.gapCenter(r.gap), "floor", spd, dt) then
+      if r.work == 0 then Audio.play("alarm", 0.6, 1.2) end
       r.work = r.work + dt
       if love.math.random() < dt * 12 then
         Particles.burst(G, r.x + 8, T.FLOOR_Y + 22, 2, { speed = 120, color = { 1, 0.7, 0.3 }, life = 0.35, add = true })
       end
-      if r.work >= 9 then
+      if r.work >= Raiders.workNeed(G, r) then
         G.uncouple(r.gap)
         Raiders.leave(G, r)
       end
@@ -255,6 +303,7 @@ function Raiders.update(G, dt)
   if G.spawnT <= 0 then
     local p = G.progress
     G.spawnT = U.lerp(17, 7, p) + love.math.random() * 5
+    if G.boss then G.spawnT = G.spawnT * 2.2 end -- the Iron Jaw brings its own raiders
     local n = 1
     if love.math.random() < p * 0.8 then n = n + 1 end
     if love.math.random() < p * 0.4 then n = n + 1 end
@@ -271,12 +320,12 @@ function Raiders.update(G, dt)
       Raiders.board(G, s)
       s.empty = true
     end
-    if love.math.random() < dt * 30 then
+    if s.kind ~= "wolf" and love.math.random() < dt * 30 then
       Particles.add(G, { x = s.x - 30, y = Raiders.SLED_Y + 8, vx = -G.speed * 6 - 60, vy = U.rand(-60, -10),
         life = 0.6, size = U.rand(2, 5), grow = 6, g = 100, color = { 0.9, 0.95, 1 }, alpha = 0.7, layer = "sled" })
     end
     if s.x < T.minX() - 1100 then
-      if not s.empty then
+      if not s.empty and s.kind ~= "wolf" then
         G.stats.outrun = G.stats.outrun + 1
         if G.stats.outrun == 1 or G.stats.outrun % 5 == 0 then
           G.toast("Outran a raider sled! Speed keeps them off.", { 0.6, 0.9, 1 })
@@ -300,8 +349,18 @@ function Raiders.update(G, dt)
         if r.toX < T.minX() then
           r.state, r.vx, r.vy = "leave", -200, 0
         else
+          -- landing spot got buried by an avalanche meanwhile? hop onto the roof instead
+          local bg = T.blockedGap
+          if bg and r.toY == T.FLOOR_Y and math.abs(r.x - T.gapCenter(bg)) < T.GAP then
+            r.x, r.toY = T.cars[bg].x + T.CAR_W - 30, T.ROOF_Y
+          end
           r.state, r.y, r.vy, r.onGround = "board", r.toY, 0, true
           Particles.burst(G, r.x, r.y, 6, { speed = 90, color = { 0.9, 0.95, 1 }, life = 0.4, g = 200 })
+          if G.onRaiderLanded then G.onRaiderLanded(r) end
+          if r.toY == T.ROOF_Y and Upgrades.has(G, "spikes") and r.kind ~= "wolf" then
+            Raiders.damage(G, r, 1, 1)
+            if r.state == "board" then r.stun = 0.8 end
+          end
         end
       end
     elseif r.state == "board" then

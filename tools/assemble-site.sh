@@ -20,7 +20,8 @@ for dir in "$ROOT"/games/*/; do
   [ -f "$dir/game.json" ] || continue
   dest="$OUT/games/$slug"
   mkdir -p "$dest"
-  for f in game.json devlog.json screenshot.png; do
+  for f in game.json devlog.json "$dir"/*.png; do
+    f="$(basename "$f")"
     [ -f "$dir/$f" ] && cp "$dir/$f" "$dest/"
   done
   [ -f "$dest/devlog.json" ] || echo "[]" > "$dest/devlog.json"

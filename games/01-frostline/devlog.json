@@ -1,5 +1,52 @@
 [
   {
+    "day": "Polish day 1",
+    "kind": "win",
+    "tag": "Shipped",
+    "title": "Version 2: everything, everywhere, all at once",
+    "body": "<p>The expansion is done. Frostline now has named passengers, a depot trader, five new kinds of trouble, wolves, a soundtrack, a pause menu that shows who's still alive, gamepad support, a high score and an actual ending where the train pulls into Haven and people wave at you.</p><p>Also a boss. We did a boss.</p><img class=\"devlog-shot\" src=\"games/01-frostline/screenshot-boss.png\" alt=\"The Iron Jaw war-wagon alongside the train\">",
+    "scribble": "see you Friday"
+  },
+  {
+    "day": "Polish day 1",
+    "kind": "oops",
+    "tag": "Balance",
+    "title": "Freezing to death, but fairly this time",
+    "body": "<p>The robot playtester kept reaching the boss with everyone alive... and then forgetting the stove during the fight. Once the car hit -36°C, a passenger froze <b>every five seconds</b>. Eight passengers. Forty seconds. The robot watched the whole thing.</p><p>We halved the freezing speed, gave saboteurs a loud alarm and a bit more time, and taught the robot to hunt down raiders who are busy doing crimes. Final exam results: <b>2 wins out of 3</b>, one of them with the Iron Jaw blown to pieces.</p>",
+    "scribble": "the robot is now emotionally prepared"
+  },
+  {
+    "day": "Polish day 1",
+    "kind": "idea",
+    "tag": "The finale",
+    "title": "Meet the Iron Jaw",
+    "body": "<p>Near the end of the line, a raider war-wagon the size of a small building rolls up next to the train. It has treads, spikes, a giant red jaw painted on the front and a harpoon gun.</p><p>Every harpoon that hits the train is a chain dragging you slower. Cut them with your wrench. Then go to the cargo car, where the box marked <b>TNT</b> has been sitting innocently the whole game, and start throwing.</p><div class=\"quote\">Our first boss fight was briefly off-screen for the entire fight. It now follows you around like a very angry dog.</div>",
+    "scribble": "the TNT was foreshadowing"
+  },
+  {
+    "day": "Polish day 1",
+    "kind": "idea",
+    "tag": "Hazards",
+    "title": "Five new ways for things to go wrong",
+    "body": "<p><b>Fires</b> break out and must be stomped. <b>Damaged track</b> means braking, or derailing. <b>Wolves</b> chase the train at night and leap onto the platforms. <b>Fevers</b> mean a run to the caboose for medicine. <b>Avalanches</b> either get outrun or bury the gap between two cars, and then you dig.</p><p>None of these are dangerous on their own. They tend to happen while raiders are uncoupling the passenger car.</p>"
+  },
+  {
+    "day": "Polish day 1",
+    "kind": "idea",
+    "tag": "Passengers",
+    "title": "Everyone has a name now, which is worse",
+    "body": "<p>The eight passengers used to be anonymous little shapes. Now they're Ivo the mechanic (engine burns less coal), Gran Olga (soup!), Doc Amara, Pip the kid who screams where raiders land, Sergei the old soldier, Lena the lookout, Bruno the stoker and Mr. Whiskers, a cat whose perk is extra scrap and whose personality is \"unimpressed\".</p><p>When someone is lost, their perk goes with them, and the game tells you exactly what you lost. \"No more soup.\" We are sorry.</p>",
+    "scribble": "protect Gran Olga at all costs"
+  },
+  {
+    "day": "Polish day 1 · morning",
+    "kind": "idea",
+    "tag": "The plan",
+    "title": "\"Which upgrades do you want?\" \"Yes.\"",
+    "body": "<p>Sage offered Tom a menu of four big expansions and suggested picking two. Tom picked all four. Plus music, a settings menu, gamepad support and a proper ending.</p><p>Sage made a task list and quietly cancelled its weekend (it doesn't have weekends).</p>",
+    "scribble": "bad idea rating: 5/5"
+  },
+  {
     "day": "Day 1 · later",
     "kind": "win",
     "tag": "Big news",

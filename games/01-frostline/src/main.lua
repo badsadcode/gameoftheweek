@@ -10,7 +10,15 @@
 --   render.lua     procedural drawing of everything in the world
 --   background.lua sky, parallax scenery, snow
 --   hud.lua        UI, title, pause and end screens
+--   hazards.lua    fires, track damage, wolves, fevers, avalanches
+--   boss.lua       the Iron Jaw finale
+--   passengers.lua the eight named passengers and their perks
+--   upgrades.lua   the depot trader
+--   input.lua      keyboard + gamepad actions
+--   menu.lua       list menus (title, pause, settings, trader)
+--   settings.lua   options + high score, saved to disk
 --   audio.lua      synthesized sound effects
+--   music.lua      procedural adaptive soundtrack
 --   devtools.lua   automated smoke test (love . --autotest)
 
 local Game = require("game")
@@ -28,11 +36,20 @@ end
 function love.load(args)
   love.graphics.setDefaultFilter("linear", "linear")
   recompute()
+  local t0 = love.timer.getTime()
   Game.load()
+  Game.loadSeconds = love.timer.getTime() - t0
   for _, a in ipairs(args or {}) do
     if a == "--autotest" then
       Dev = require("devtools")
       Dev.start(Game)
+    elseif a == "--loadtime" then
+      print(string.format("[loadtime] %.2f s", Game.loadSeconds))
+      love.event.quit()
+    elseif a == "--scenes" then
+      Dev = require("devtools")
+      Dev.startScenes(Game)
+      Dev.update = Dev.updateScenes
     end
   end
 end
@@ -58,7 +75,10 @@ end
 
 function love.keypressed(k)
   if k == "f11" then
-    love.window.setFullscreen(not love.window.getFullscreen())
+    local Settings = require("settings")
+    Settings.data.fullscreen = not Settings.data.fullscreen
+    Settings.save()
+    Game.applySettings()
     recompute()
     return
   end
@@ -66,11 +86,13 @@ function love.keypressed(k)
 end
 
 function love.mousepressed(_, _, b) Game.mousepressed(b) end
+function love.gamepadpressed(_, button) Game.gamepadpressed(button) end
+function love.gamepadaxis(_, axis, value) Game.gamepadaxis(axis, value) end
 
 function love.focus(f)
   if Dev then return end
   if not f then
     local G = Game.state()
-    if G and G.state == "play" then G.state = "paused" end
+    if G and G.state == "play" and not G.menu then Game.openMenu(Game.pauseMenu()) end
   end
 end

@@ -28,11 +28,15 @@ T.FURNACE_X = eng.x + 140
 T.COAL_X    = T.cars[4].x + T.CAR_W / 2
 T.STOVE_X   = T.cars[2].x + T.CAR_W / 2
 T.MEDKIT_X  = T.cars[1].x + 70
+T.DYNAMITE_X = T.cars[3].x + 60         -- crate in the cargo car (boss fight)
+T.TRADER_X  = T.cars[3].x + T.CAR_W / 2 + 60
 
 -- index of the rear-most car still attached (raiders can uncouple cars)
 T.firstAttached = 1
+-- gap index buried by an avalanche (blocks walking between those two cars), or nil
+T.blockedGap = nil
 
-function T.reset() T.firstAttached = 1 end
+function T.reset() T.firstAttached = 1; T.blockedGap = nil end
 function T.minX() return T.cars[T.firstAttached].x end
 
 function T.carAt(x)
@@ -74,6 +78,14 @@ function T.stepBody(b, dt)
   local lo = T.minX() + 12
   local hi = (b.y > T.ROOF_Y + 10) and (T.CAB_END - 12) or (T.LENGTH - 12)
   if nx < lo then nx = lo; b.vx = 0 elseif nx > hi then nx = hi; b.vx = 0 end
+  -- a snow-buried gap is a wall at floor level
+  local bg = T.blockedGap
+  if bg and bg >= T.firstAttached and b.y > T.ROOF_Y + 10 then
+    local a = T.cars[bg].x + T.CAR_W - 6
+    local z = T.cars[bg + 1].x + 6
+    if b.x <= a and nx > a then nx = a; b.vx = 0
+    elseif b.x >= z and nx < z then nx = z; b.vx = 0 end
+  end
   b.x = nx
 
   local ny = b.y + b.vy * dt

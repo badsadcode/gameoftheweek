@@ -8,6 +8,7 @@ local U = require("util")
 local Audio = require("audio")
 local Raiders = require("raiders")
 local Particles = require("particles")
+local Passengers = require("passengers")
 
 local E = {}
 E.DEPOT_SPEED = 35
@@ -40,12 +41,14 @@ local function spawnOverhead(G)
   local o = {
     kind = tunnel and "tunnel" or "bridge",
     len = tunnel and U.rand(900, 1500) or 70,
-    x = T.LENGTH + 150 + math.max(flow * 4.5, 500),
+    x = T.LENGTH + 150 + math.max(flow * 4.5, 500) * (Passengers.has(G, "lena") and 1.6 or 1),
     seed = love.math.random() * 1000,
   }
   G.overheads[#G.overheads + 1] = o
   Audio.play("bell", 0.6)
-  G.toast(tunnel and "TUNNEL AHEAD! Get off the roof or DUCK [S]." or "LOW BRIDGE AHEAD! Get off the roof or DUCK [S].", { 1, 0.85, 0.3 })
+  local duck = "DUCK [" .. G.label("down") .. "]"
+  local who = Passengers.has(G, "lena") and "Lena: " or ""
+  G.toast(who .. (tunnel and "TUNNEL AHEAD! Get off the roof or " or "LOW BRIDGE AHEAD! Get off the roof or ") .. duck .. ".", { 1, 0.85, 0.3 })
 end
 
 function E.update(G, dt)

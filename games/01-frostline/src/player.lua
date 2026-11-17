@@ -2,17 +2,10 @@
 local T = require("train")
 local U = require("util")
 local Audio = require("audio")
+local Input = require("input")
 
 local Player = {}
 Player.__index = Player
-
-local function held(...)
-  for i = 1, select("#", ...) do
-    if love.keyboard.isDown((select(i, ...))) then return true end
-  end
-  return false
-end
-Player.held = held
 
 function Player.new()
   local p = setmetatable({}, Player)
@@ -24,7 +17,7 @@ function Player.new()
   p.gap = nil
   p.ducking = false
   p.health, p.warmth = 100, 100
-  p.carrying = false
+  p.carrying = nil -- nil | "coal" | "medicine" | "dynamite"
   p.attackT, p.attackCD = 0, 0
   p.stun, p.hurtT, p.lastHurt = 0, 0, 99
   p.overheadCD = 0
@@ -86,8 +79,8 @@ function Player:update(G, dt)
   self.overheadCD = math.max(0, self.overheadCD - dt)
   self.lastHurt = self.lastHurt + dt
 
-  local L, R = held("a", "left"), held("d", "right")
-  local Up, Dn = held("w", "up"), held("s", "down")
+  local L, R = Input.down("left"), Input.down("right")
+  local Up, Dn = Input.down("up"), Input.down("down")
   if self.stun > 0 then
     self.stun = self.stun - dt
     L, R, Up, Dn = false, false, false, false
