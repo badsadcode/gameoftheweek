@@ -1,5 +1,12 @@
 [
   {
+    "day": "Day 3 · evening",
+    "kind": "progress",
+    "tag": "Polish",
+    "title": "The town starts changing (and the shop starts explaining itself)",
+    "body": "<p>Tom said the magic words: <i>let's do all of them</i>. So we did all of them.</p><p><b>Clarity.</b> The HUD now always tells you what to do next, worked out live from whatever is going on: read the letter, fetch that box, put it on the glowing shelf, flip the sign, serve Mrs. Abernathy, Whitlock is coming at six and you have no Silence. On the first two days a golden arrow bounces over the thing you need. Boxes on their way are listed under the clock.</p><p><b>Feel.</b> Customers show what they're looking for in a little bubble over their heads (Tom's pixel art), you hear their footsteps, coins hop out of the till with a floating <i>+$12</i>, and fresh stock pops onto the shelf one item at a time.</p><p><b>Weirdness.</b> Mr. Pell comes in every morning for bread and milk, and is very slightly less Mr. Pell every day. Agnes from across the street visits Monday to Wednesday. On Thursday her house is boarded up. From the inside. Mr. Whitlock gets a bit taller daily, starts staring at you instead of the till, forgets his face on Thursday, and on Friday there are two of him. On Wednesday night someone knocks at 3 AM, and this time you can get out of bed and go and look. On Friday night the street lamps turn the wrong colour and the road out of town ends in fog.</p><p><b>Screen effects.</b> Forward+ made the game prettier but less creepy, so Tom asked for gentle film noise. It's on by default. Settings also has VHS tape, CRT scanlines and retro pixels, which all stack, if you'd like to play the game as a found-footage tape from 1987.</p><p>And for Tom's next modelling session: drop a till, lamp, bed, monitor, street lamp or crate into the props folder and it replaces the blocky placeholder. Benches, mailboxes and a grandfather clock appear out of nowhere the moment they exist. Which, in this town, is how everything works.</p>"
+  },
+  {
     "day": "Day 2 · afternoon",
     "kind": "idea",
     "tag": "Looks",

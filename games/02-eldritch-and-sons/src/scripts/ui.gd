@@ -17,6 +17,8 @@ var prompt_label: Label
 var crosshair: Label
 var toast_box: VBoxContainer
 var held_label: Label
+var goal_label: Label
+var deliv_label: Label
 var panel_layer: Control
 var open_panel: Control = null
 var fade: ColorRect
@@ -125,6 +127,15 @@ func _build_hud() -> void:
 	clock_label = lbl("07:00  CLOSED", 26)
 	rent_label = lbl("", 16, Color(0.8, 0.75, 0.7))
 	v.add_child(day_label); v.add_child(clock_label); v.add_child(rent_label)
+	# what to do next + boxes on the way (guide.gd)
+	goal_label = lbl("", 18, C_GOLD)
+	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	goal_label.custom_minimum_size = Vector2(300, 0)
+	v.add_child(goal_label)
+	deliv_label = lbl("", 15, Color(0.75, 0.8, 0.9))
+	deliv_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	deliv_label.custom_minimum_size = Vector2(300, 0)
+	v.add_child(deliv_label)
 
 	var tr := PanelContainer.new()
 	tr.add_theme_stylebox_override("panel", box_style(Color(0.05, 0.04, 0.07, 0.7)))
@@ -175,11 +186,13 @@ func _build_hud() -> void:
 func update_hud() -> void:
 	var g = game
 	day_label.text = "%s  ·  DAY %d" % [g.day_name(), g.day]
-	var h := int(g.minute) / 60
+	var h := int(g.minute) / 60 % 24
 	var m := int(g.minute) % 60
 	clock_label.text = "%02d:%02d   %s" % [h, m, "OPEN" if g.is_open else "CLOSED"]
 	clock_label.add_theme_color_override("font_color", C_GREEN if g.is_open else C_RED)
 	rent_label.text = g.rent_text()
+	goal_label.text = ("> " + g.guide.text) if g.guide and g.guide.text != "" and g.started else ""
+	deliv_label.text = g.guide.deliveries_text() if g.guide else ""
 	money_label.text = "$%d" % g.money
 	rep_bar.value = g.rep
 	sanity_bar.value = g.sanity
@@ -190,7 +203,9 @@ func update_hud() -> void:
 	var k: float = 1.0 - g.sanity / 100.0
 	var sm := post.material as ShaderMaterial
 	sm.set_shader_parameter("strength", clampf(k * 1.25, 0.0, 1.0) * k)
-	sm.set_shader_parameter("time", g.clock_t)
+	sm.set_shader_parameter("time", Time.get_ticks_msec() / 1000.0)
+	for fx in ["grain", "vhs", "crt", "pixels"]:
+		sm.set_shader_parameter(fx, 1.0 if GameSettings.data["fx_" + fx] else 0.0)
 
 func toast(text: String, color := C_TEXT, dur := 4.0) -> void:
 	var l := lbl(text, 22, color)
@@ -384,6 +399,7 @@ func show_title(on_start: Callable) -> void:
 	v.add_child(button("Open the shop", func():
 		close_panel()
 		on_start.call(), 28, C_GOLD))
+	v.add_child(button("Settings", func(): show_settings(func(): show_title(on_start)), 22))
 	v.add_child(button("Quit", func(): get_tree().quit(), 22))
 	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 2\nLetters voiced by Tom (made with ElevenLabs)", 16, Color(0.6, 0.6, 0.7))
 	c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -400,11 +416,7 @@ func show_pause(on_title: Callable) -> void:
 	v.add_child(button("Shop rules", func():
 		close_panel()
 		toggle_notebook(), 22))
-	var vb := button("Letter voices: %s" % ("On" if game.voices_on else "Off"), func(): pass, 20)
-	vb.pressed.connect(func():
-		game.voices_on = not game.voices_on
-		vb.text = "Letter voices: %s" % ("On" if game.voices_on else "Off"))
-	v.add_child(vb)
+	v.add_child(button("Settings", func(): show_settings(func(): show_pause(on_title)), 22))
 	v.add_child(button("Quit to title", func():
 		close_panel()
 		on_title.call(), 22))
@@ -423,4 +435,55 @@ func show_ending(title: String, body: String, color: Color, on_again: Callable) 
 	v.add_child(button("Start a new week", func():
 		close_panel()
 		on_again.call(), 24, C_GOLD))
+	_show(p)
+
+# --------------------------------------------------------------------------- settings
+func _toggle_row(v: VBoxContainer, key: String, text: String) -> void:
+	var label_of := func() -> String: return "%s:  %s" % [text, "On" if GameSettings.data[key] else "Off"]
+	var b := button(label_of.call(), func(): pass, 20)
+	b.pressed.connect(func():
+		GameSettings.data[key] = not GameSettings.data[key]
+		GameSettings.save_settings()
+		GameSettings.apply()
+		b.text = label_of.call())
+	v.add_child(b)
+
+func _slider_row(v: VBoxContainer, key: String, text: String, lo: int, hi: int) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	var l := lbl("%s: %d" % [text, GameSettings.data[key]], 20)
+	l.custom_minimum_size = Vector2(230, 0)
+	row.add_child(l)
+	var sl := HSlider.new()
+	sl.min_value = lo
+	sl.max_value = hi
+	sl.step = 1
+	sl.value = GameSettings.data[key]
+	sl.custom_minimum_size = Vector2(300, 28)
+	sl.value_changed.connect(func(val: float):
+		GameSettings.data[key] = int(val)
+		GameSettings.save_settings()
+		GameSettings.apply()
+		l.text = "%s: %d" % [text, int(val)]
+		Sfx.play("click", 0.5))
+	row.add_child(sl)
+	v.add_child(row)
+
+## the settings panel; `on_back` reopens whatever menu we came from
+func show_settings(on_back: Callable) -> void:
+	var p := panel(640, 560)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	p.add_child(v)
+	v.add_child(lbl("SETTINGS", 34, C_GOLD))
+	_slider_row(v, "volume", "Volume", 0, 10)
+	_slider_row(v, "mouse", "Mouse sensitivity", 1, 10)
+	_toggle_row(v, "voices", "Letter voices")
+	if not OS.has_feature("web"): _toggle_row(v, "fullscreen", "Fullscreen")
+	v.add_child(lbl("SCREEN EFFECTS", 22, C_PURPLE))
+	for key in ["fx_grain", "fx_vhs", "fx_crt", "fx_pixels"]:
+		_toggle_row(v, key, GameSettings.LABELS[key])
+	v.add_child(button("Back", func():
+		close_panel()
+		on_back.call(), 22, C_GOLD))
 	_show(p)

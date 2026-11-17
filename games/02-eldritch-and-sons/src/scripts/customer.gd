@@ -23,6 +23,9 @@ var exit_spawn := Vector3.ZERO
 var flags := {}                # rule-specific data
 var refund_item := ""          # for customers who come to return something
 var bubble_t := 0.0
+var icon: Sprite3D             # what they're looking for, Minecraft-item style, above their head
+var icon_id := ""
+var step_d := 0.0              # distance walked since the last footstep
 
 func setup(g, look: Dictionary, spawn: Vector3) -> void:
 	game = g
@@ -30,6 +33,15 @@ func setup(g, look: Dictionary, spawn: Vector3) -> void:
 	add_child(body)
 	body.build(look)
 	bubble = Vox.label(self, "", Vector3(0, 2.25 * look.get("height", 1.0) + 0.1, 0), 64, Color(1, 1, 1), true)
+	icon = Sprite3D.new()
+	icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	icon.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	icon.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	icon.shaded = false
+	icon.position = bubble.position + Vector3(0, 0.12, 0)
+	icon.layers = int(look.get("layer", 1))
+	add_child(icon)
+	bubble.layers = icon.layers
 	position = spawn
 	exit_spawn = World.SPAWNS[1] if spawn.x < 0 else World.SPAWNS[0]
 	path = [World.DOOR_OUT, World.DOOR_IN]
@@ -69,6 +81,13 @@ func _walk(dt: float) -> bool:
 		return path.is_empty()
 	var step := minf(d, speed * dt)
 	position += to / d * step
+	step_d += step
+	if step_d > 0.62:
+		step_d = 0.0
+		if not flags.get("silent", false):
+			var dist: float = position.distance_to(game.player.global_position)
+			var vol := clampf(1.0 - dist / 11.0, 0.0, 1.0) * 0.3
+			if vol > 0.01: Sfx.play("step", vol, randf_range(0.75, 0.95))
 	body.speed = speed
 	var look_dir := Vector3(to.x, 0, to.z)
 	if look_dir.length() > 0.01:
@@ -91,7 +110,7 @@ func _next_shelf() -> void:
 			return
 		wants.pop_front()
 		missed += 1
-		say("?", 2.0)
+		say("No %s?" % Products.pname(id), 2.5)
 		game.on_missed(self, id)
 	# nothing left to find
 	if basket.is_empty():
@@ -125,10 +144,30 @@ func queue_spot_changed(i: int) -> void:
 		else:
 			path = [spot]
 
+## the want-bubble: while shopping, show the next thing on their list
+func _update_want() -> void:
+	var id := ""
+	if bubble_t <= 0.0 and not wants.is_empty() and (state == "browse" or (state == "arrive" and position.z < 4.5)):
+		id = wants[0]
+	if id == icon_id: return
+	icon_id = id
+	var tex: Texture2D = Vox.art(id) if id != "" else null
+	icon.texture = tex
+	icon.visible = tex != null
+	if tex: icon.pixel_size = 0.34 / tex.get_width()
+	if id != "" and tex == null: bubble.text = Products.pname(id) + "?"
+	elif bubble_t <= 0.0: bubble.text = ""
+
 func _process(dt: float) -> void:
 	if bubble_t > 0.0:
 		bubble_t -= dt
-		if bubble_t <= 0.0: bubble.text = ""
+		if bubble_t <= 0.0:
+			bubble.text = ""
+			icon_id = "-"
+	if bubble_t > 0.0 and icon.visible:
+		icon.visible = false
+		icon_id = "-"
+	_update_want()
 	match state:
 		"arrive":
 			if _walk(dt):
@@ -153,7 +192,7 @@ func _process(dt: float) -> void:
 						game.on_picked(self, id)
 					else:
 						missed += 1
-						say("?", 2.0)
+						say("No %s?" % Products.pname(id), 2.5)
 						game.on_missed(self, id)
 					target_shelf = null
 					_next_shelf()
@@ -170,8 +209,13 @@ func _process(dt: float) -> void:
 					else: say("$%d" % basket_total(), 999.0)
 				_face(Vector3(-4.6, 0, 2.0), dt)
 		"wait":
-			body.pose = "pay" if fmod(wait_t, 6.0) < 1.2 else "idle"
-			_face(Vector3(-4.6, 0, 1.0), dt)
+			if flags.get("stare", false):
+				# doesn't look at the till. Looks at you.
+				body.pose = "stare"
+				_face(game.player.global_position, dt)
+			else:
+				body.pose = "pay" if fmod(wait_t, 6.0) < 1.2 else "idle"
+				_face(Vector3(-4.6, 0, 1.0), dt)
 			wait_t += dt
 			if wait_t > patience and not flags.get("patient", false):
 				game.on_impatient(self)

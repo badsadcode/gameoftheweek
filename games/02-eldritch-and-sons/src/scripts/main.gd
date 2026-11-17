@@ -50,12 +50,18 @@ var autotest := false
 var hum: AudioStreamPlayer
 var wind: AudioStreamPlayer
 var voice: AudioStreamPlayer   # voiced letters (recorded by Tom with ElevenLabs)
-var voices_on := true
 var ending := false
+var guide: Guide
+var night_walk := false        # the interactive 3 AM walk (Wednesday night)
+var walk_lines: Array = []
+var walk_t := 0.0
+var walk_figure: VoxelPerson
 
 # --------------------------------------------------------------------------- setup
 func _ready() -> void:
 	rng.randomize()
+	GameSettings.load_settings()
+	GameSettings.apply()
 	_setup_input()
 	autotest = OS.get_cmdline_user_args().has("--autotest") or OS.get_cmdline_args().has("--autotest")
 	world = World.new()
@@ -69,6 +75,9 @@ func _ready() -> void:
 	ui = UI.new()
 	add_child(ui)
 	ui.setup(self)
+	guide = Guide.new()
+	add_child(guide)
+	guide.setup(self)
 	hum = Sfx.loop("hum", 0.18)
 	voice = AudioStreamPlayer.new()
 	add_child(voice)
@@ -180,8 +189,12 @@ func _restart(skip: bool) -> void:
 
 # --------------------------------------------------------------------------- main loop
 func _process(dt: float) -> void:
+	player.sensitivity = GameSettings.mouse_sensitivity()
 	ui.update_hud()
 	if not started or ui.is_open() or ending: return
+	if night_walk:
+		_night_walk_tick(dt)
+		return
 	clock_t += dt
 	minute += dt * MIN_PER_SEC
 	_deliveries()
@@ -223,7 +236,15 @@ func _apply_time_of_day() -> void:
 	world.env.ambient_light_energy = lerpf(0.18, 0.65, day_k)
 	world.sun.light_energy = lerpf(0.0, 0.7, day_k)
 	world.sun.light_color = Color(1, 0.95, 0.9).lerp(Color(1, 0.6, 0.4), dusk)
-	for l in world.street_lights: l.light_energy = night * 1.6
+	var wrong := (day == 5 and m >= CLOSE_MIN) or night_walk
+	for l in world.street_lights:
+		l.light_energy = night * 1.6
+		l.light_color = Color(0.65, 0.3, 1.0) if wrong else Color(1, 0.8, 0.5)
+	if wrong and world.fancy: world.env.volumetric_fog_density = 0.11
+	if day == 5 and m >= CLOSE_MIN and not flags.get("friday_lamps", false) and started and not night_walk:
+		flags["friday_lamps"] = true
+		Sfx.play("drone", 0.7, 0.6)
+		ui.toast("The street lamps have changed colour. The road out of town ends in fog.", UI.C_PURPLE, 7.0)
 	for g in world.window_glows: g.visible = night > 0.4
 	if wind: wind.volume_db = linear_to_db(maxf(0.001, (0.05 + night * 0.25) * (1.0 if player.global_position.z > 5.0 else 0.4)))
 
@@ -323,19 +344,23 @@ func _letter_voice(d: int) -> AudioStream:
 ## letters are read aloud (grandpa, the Supplier, the Landlord) while the text stays on screen
 func play_letter_voice(d: int) -> void:
 	var s := _letter_voice(d)
-	if s == null or not voices_on: return
+	if s == null or not GameSettings.data["voices"]: return
 	voice.stream = s
 	voice.volume_db = linear_to_db(Sfx.volume)
 	voice.play()
 	hum.volume_db = linear_to_db(0.06)
 
 func bed_prompt() -> String:
+	if night_walk: return "[E] Go back to sleep"
 	if day == 5 and not flags.get("rent_paid", false): return "You can't sleep. The Landlord is coming."
 	if minute < CLOSE_MIN: return "Too early to sleep (the shop closes at 20:00)"
 	if _inside_count() > 0: return "There are still customers inside"
 	return "[E] Go to sleep"
 
 func go_to_bed() -> void:
+	if night_walk:
+		_finish_night_walk()
+		return
 	if bed_prompt() != "[E] Go to sleep": return
 	_end_day(false)
 
@@ -399,7 +424,7 @@ func find_shelf(id: String) -> Shelf:
 	return null
 
 # --------------------------------------------------------------------------- customers
-const NAMES := ["Mrs. Abernathy", "Old Tom", "Ms. Pike", "Mr. Gray", "Agnes", "Barnaby", "Mrs. Lumley", "Silas", "Edna", "Mr. Crane", "Prudence", "Jonah", "Wilma", "Ezekiel", "Hattie", "Mr. Fogg"]
+const NAMES := ["Mrs. Abernathy", "Old Tom", "Ms. Pike", "Mr. Gray", "Barnaby", "Mrs. Lumley", "Silas", "Edna", "Mr. Crane", "Prudence", "Jonah", "Wilma", "Ezekiel", "Hattie", "Mr. Fogg"]
 
 func _random_wants(odd: bool) -> Array:
 	var pool := [["bread", 5.0], ["milk", 5.0], ["salt", 4.0], ["tea", 3.0], ["candles", 3.0]]
@@ -441,8 +466,16 @@ func door_passed(c: Customer) -> void:
 		Sfx.play("bell", 0.5)
 
 func on_entered(c: Customer) -> void:
+	if c.kind == "echo":
+		c.state = "linger"
+		c.flags["linger_until"] = clock_t + 45.0
+		c.flags["linger_pose"] = "stare"
+		c.say("We are Mr. Whitlock.", 6.0)
+		return
 	if not is_open and c.kind == "normal":
 		c.leave("Closed?")
+		return
+	if c.flags.has("hello"): c.say(c.flags["hello"], 4.0)
 
 func on_picked(c: Customer, id: String) -> void:
 	pass
@@ -521,6 +554,7 @@ func register_use() -> void:
 			var price: int = Products.info(c.refund_item)["price"]
 			money -= price
 			today["spent"] += price
+			_pop_money(-price)
 			flags["thorne_owes"] = c.refund_item
 			keep_rule("Refunded something not yet bought")
 			c.say("Thank you, dear. See you tomorrow.", 4.0)
@@ -532,6 +566,7 @@ func register_use() -> void:
 				ui.toast("Not enough. He waits. Patiently. Forever, if necessary.", UI.C_PURPLE)
 				return
 			money -= RENT
+			_pop_money(-RENT)
 			flags["rent_paid"] = true
 			flags["paid_with"] = "money"
 			Sfx.play("till", 1.0, 0.6)
@@ -549,14 +584,17 @@ func register_use() -> void:
 		flags["salt_cursed"] = true
 		for l in world.lamps: l.light_energy = 0.0
 	if c.kind == "whitlock":
-		c.say("...", 3.0)
+		c.say(["...", "...", "...thank you.", "", "We thank you."][clampi(day - 1, 0, 4)], 4.0)
 		flags["whitlock_served"] = flags.get("whitlock_served", 0) + 1
 		keep_rule("Mr. Whitlock got his Tinned Silence")
 	elif c.kind == "thorne_buyer":
 		total *= 2
 		c.say("Exactly as I remembered. Keep the change.", 4.0)
+	elif c.flags.has("bye"):
+		c.say(c.flags["bye"], 4.0)
 	else:
 		c.say(["Thanks!", "Lovely.", "Ta.", "Bless you.", "Mm."][rng.randi() % 5], 2.5)
+	_pop_money(total)
 	money += total
 	today["income"] += total
 	today["served"] += 1
@@ -609,9 +647,21 @@ func _specials() -> void:
 	# Mr. Whitlock, every evening at six (ish)
 	if not flags["whitlock_done"] and minute >= 17 * 60 + 40 and minute < CLOSE_MIN:
 		flags["whitlock_done"] = true
+		# a little taller every day. He stares from Wednesday. On Thursday he forgot his face.
 		var look := { "skin": Color(0.86, 0.86, 0.82), "shirt": Color(0.3, 0.3, 0.33), "pants": Color(0.12, 0.12, 0.14),
-			"coat": Color(0.08, 0.08, 0.1), "hat": Color(0.06, 0.06, 0.07), "height": 1.22, "width": 0.82, "eyes": Color(0.02, 0.02, 0.02), "face": "face_whitlock" }
+			"coat": Color(0.08, 0.08, 0.1), "hat": Color(0.06, 0.06, 0.07), "height": 1.22 + 0.05 * (day - 1), "width": 0.82, "eyes": Color(0.02, 0.02, 0.02), "face": "face_whitlock" }
+		if day == 4:
+			look.erase("face")
+			look["weird"] = ["no_face"]
 		var c := _new_customer(look, "whitlock", World.SPAWNS[0])
+		if day >= 3: c.flags["stare"] = true
+		if day == 5:
+			# ...and on Friday there are two of him
+			var e := _new_customer(look, "echo", World.SPAWNS[1])
+			e.cname = "Mr. Whitlock"
+			e.speed = 1.1
+			e.flags["silent"] = true
+			ui.toast("Mr. Whitlock is coming up the street. From both directions.", UI.C_PURPLE, 6.0)
 		c.cname = "Mr. Whitlock"
 		c.wants = ["silence"]
 		c.speed = 1.1
@@ -619,6 +669,8 @@ func _specials() -> void:
 		c.flags["patient"] = true
 		if not is_open:
 			c.flags["outside"] = true
+	# the regulars
+	_regulars()
 	# the one the camera can't see
 	if not flags["unseen_done"] and minute >= flags["unseen_at"] and is_open:
 		flags["unseen_done"] = true
@@ -690,6 +742,121 @@ func _whitlock_unserved(c: Customer, outside := false) -> void:
 	c.say("...", 8.0)
 	break_rule("Mr. Whitlock didn't get his Tinned Silence", 10.0, "Mr. Whitlock stands outside your window all night. He doesn't blink. You check twice.")
 
+
+# --------------------------------------------------------------------------- regulars (they change a little every day)
+const PELL_HELLO := ["Morning! The usual.", "Morning. The usual.", "Morning. The us-ual.", "MORNING. THE. USUAL.", "Have we met? The usual."]
+const PELL_BYE := ["See you tomorrow!", "See you tomorrow.", "See you tomorrow. And tomorrow.", "SEE YOU.", "Same time forever."]
+const AGNES_HELLO := ["Hello, dear! I live just across the street.", "Did you hear that hammering last night?", "Someone knocks on my door at night. I don't answer."]
+const AGNES_BYE := ["Your grandfather was a lovely man.", "Lock your doors, dear.", "If I stop coming in... don't come looking."]
+
+func _regulars() -> void:
+	if not is_open or day > 5: return
+	# Mr. Pell: every morning, bread and milk, slightly less like Mr. Pell each time
+	if not flags.get("pell_day_%d" % day, false) and minute >= 8 * 60 + 40:
+		flags["pell_day_%d" % day] = true
+		var weird := []
+		if day >= 3: weird.append("glow_eyes")
+		if day >= 4: weird.append("long_arms")
+		if day >= 5: weird.append("extra_arms")
+		var look := { "skin": Color(0.88, 0.72, 0.6), "shirt": Color(0.45, 0.35, 0.25), "pants": Color(0.2, 0.18, 0.15),
+			"hair": Color(0.3, 0.22, 0.15), "hat": Color(0.25, 0.2, 0.15), "height": 1.0 + 0.045 * (day - 1), "face": "face_townsfolk_1",
+			"eyes": Color(0.9, 0.85, 0.3), "weird": weird }
+		var c := _new_customer(look)
+		c.cname = "Mr. Pell"
+		c.wants = ["bread", "milk"]
+		c.flags["hello"] = PELL_HELLO[day - 1]
+		c.flags["bye"] = PELL_BYE[day - 1]
+	# Agnes from across the street: Monday to Wednesday. Then her house is boarded up.
+	if day <= 3 and not flags.get("agnes_day_%d" % day, false) and minute >= 11 * 60:
+		flags["agnes_day_%d" % day] = true
+		var look := { "skin": Color(0.92, 0.8, 0.72), "shirt": Color(0.4, 0.45, 0.6), "pants": Color(0.3, 0.3, 0.4),
+			"hair": Color(0.88, 0.88, 0.9), "height": 0.9, "face": "face_townsfolk_3" }
+		var c := _new_customer(look, "normal", World.SPAWNS[0])
+		c.cname = "Agnes"
+		c.wants = [["tea", "candles"], ["tea", "bread"], ["candles", "salt", "salt"]][day - 1]
+		c.flags["hello"] = AGNES_HELLO[day - 1]
+		c.flags["bye"] = AGNES_BYE[day - 1]
+
+# --------------------------------------------------------------------------- juice
+## "+$12" floats up from the till and a few coins hop out
+func _pop_money(amount: int) -> void:
+	var at := Vector3(-4.6, 1.55, 2.05)
+	var l := Vox.label(world, ("+$%d" % amount) if amount >= 0 else ("-$%d" % -amount), at, 56, UI.C_GOLD if amount >= 0 else UI.C_RED, true)
+	l.no_depth_test = true
+	var tw := l.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(l, "position", at + Vector3(0, 0.7, 0), 1.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(l, "modulate:a", 0.0, 1.3).set_delay(0.4)
+	tw.chain().tween_callback(l.queue_free)
+	if amount <= 0: return
+	var coin_mat := Vox.obj_mat(Color(1, 0.8, 0.3), true)
+	for i in mini(6, 2 + amount / 5):
+		var coin := Vox.box(world, at, Vector3(0.07, 0.025, 0.07), coin_mat, false)
+		var side := Vector3(rng.randf_range(-0.35, 0.35), 0, rng.randf_range(-0.25, 0.1))
+		var ct := coin.create_tween()
+		ct.tween_interval(i * 0.05)
+		ct.tween_property(coin, "position", at + side * 0.5 + Vector3(0, rng.randf_range(0.3, 0.5), 0), 0.22).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		ct.tween_property(coin, "position", at + side + Vector3(0, -0.2, 0), 0.25).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		ct.tween_callback(coin.queue_free)
+		coin.rotation = Vector3(rng.randf() * 3.0, rng.randf() * 3.0, 0)
+
+# --------------------------------------------------------------------------- 3 AM (Wednesday night)
+func _start_night_walk(lines: Array) -> void:
+	night_walk = true
+	walk_lines = lines
+	walk_t = 0.0
+	flags["walk_seen"] = false
+	minute = 27 * 60 + 7
+	player.global_position = Vector3(-2.2, 0.05, -8.0)
+	player.rotation.y = 0.0
+	player.frozen = false
+	_apply_time_of_day()
+	for i in world.lamps.size():
+		world.lamps[i].light_energy = 0.35 if i == 2 else 0.0
+		world.lamp_meshes[i].visible = i == 2
+	# something at the far end of the street
+	walk_figure = VoxelPerson.new()
+	add_child(walk_figure)
+	walk_figure.build({ "skin": Color(0.05, 0.04, 0.07), "shirt": Color(0.04, 0.03, 0.06), "pants": Color(0.03, 0.03, 0.05),
+		"coat": Color(0.06, 0.04, 0.09), "eyes": Color(0.85, 0.4, 1.0), "weird": ["glow_eyes", "long_arms"], "height": 1.5, "width": 0.9 })
+	walk_figure.position = Vector3(-15.5, 0, 10.8)
+	walk_figure.rotation.y = -PI / 2
+	Sfx.play("knock", 1.0, 0.8)
+	ui.toast("03:07. Someone is knocking on the front door. Three times.", UI.C_PURPLE, 6.0)
+
+func _night_walk_tick(dt: float) -> void:
+	walk_t += dt
+	var seen: bool = flags.get("walk_seen", false)
+	if not seen and fmod(walk_t, 7.0) < dt:
+		Sfx.play("knock", 0.9, 0.8)
+	if walk_figure == null: return
+	walk_figure.rotation.y = lerp_angle(walk_figure.rotation.y, atan2(-(player.global_position.x - walk_figure.position.x), -(player.global_position.z - walk_figure.position.z)), dt * 2.0)
+	if not seen and player.global_position.z > 5.0:
+		if not flags.has("walk_out_t"):
+			flags["walk_out_t"] = walk_t
+			Sfx.play("whisper", 0.7, 0.8)
+			ui.toast("Nobody at the door. But there's someone at the end of the street.", UI.C_PURPLE, 5.0)
+		if walk_t - float(flags["walk_out_t"]) > 3.5:
+			flags["walk_seen"] = true
+			walk_figure.queue_free()
+			walk_figure = null
+			Sfx.play("drone", 1.0, 0.5)
+			for l in world.street_lights: l.light_energy = 0.0
+			ui.toast("Go back to sleep.", UI.C_PURPLE, 6.0)
+			get_tree().create_timer(1.2).timeout.connect(_apply_time_of_day)
+
+func _finish_night_walk() -> void:
+	night_walk = false
+	flags.erase("walk_out_t")
+	if walk_figure:
+		walk_figure.queue_free()
+		walk_figure = null
+	var lines := walk_lines.duplicate()
+	if flags.get("walk_seen", false): lines.append("You don't remember walking back to bed.\nYour shoes are wet.")
+	else: lines.append("You pull the blanket over your head. The knocking stops at dawn.")
+	player.frozen = true
+	ui.night_card(lines, _next_day)
+
 # --------------------------------------------------------------------------- end of day
 const NIGHTS := {
 	1: ["You lock up and climb into grandpa's old bed.", "At 3 AM, someone knocks on the back door. Three times.", "In the morning there's nobody there. Just wet footprints.\nLeading in."],
@@ -697,6 +864,15 @@ const NIGHTS := {
 	3: ["You dream of the shop. In the dream the shelves go on forever.", "Grandpa is standing in aisle three.\n\"Don't let them see you're scared,\" he says."],
 	4: ["The town is very quiet tonight.", "Somewhere under the floorboards, something is counting coins.", "Tomorrow is Friday."],
 }
+
+const LOW_NIGHTS := [
+	"You count the ceiling boards. There's one more than yesterday.",
+	"Your reflection goes to bed a few seconds after you do.",
+	"Someone in the shop downstairs is restocking the shelves. You live alone.",
+	"The bell over the door rings all night. Nobody comes in.",
+	"You dream you are a customer. The shopkeeper has your face.",
+	"The tins of Silence are humming. Very, very quietly.",
+]
 
 func _end_day(collapsed: bool) -> void:
 	if day == 5:
@@ -724,13 +900,18 @@ func _end_day(collapsed: bool) -> void:
 	if collapsed: lines.append("!You fell asleep at the counter.")
 	var night_lines: Array = NIGHTS.get(day, []).duplicate()
 	for n in today["night"]: night_lines.append(n)
+	if sanity < 50.0: night_lines.append(LOW_NIGHTS[rng.randi() % LOW_NIGHTS.size()])
+	if day == 3: night_lines.append("Across the street, Agnes's lights go out one by one.\nThen they come back on. Purple.")
 	if today["night"].size() > 0: lose_sanity(5.0 * today["night"].size())
 	if ending: return
 	print("[day %d] %s" % [day, " | ".join(lines)])
 	if autotest:
 		_next_day()
 		return
-	ui.show_summary(lines, func(): ui.night_card(night_lines, _next_day))
+	if day == 3:
+		ui.show_summary(lines, func(): _start_night_walk(night_lines))
+	else:
+		ui.show_summary(lines, func(): ui.night_card(night_lines, _next_day))
 
 func _next_day() -> void:
 	if ending: return
@@ -743,6 +924,9 @@ func _next_day() -> void:
 	world.letter.visible = true
 	world.letter.process_mode = Node.PROCESS_MODE_INHERIT
 	if day == 3: world.show_mystery_house()
+	if day == 4:
+		world.board_up_agnes()
+		ui.toast("Agnes's house across the street is boarded up. From the inside.", UI.C_PURPLE, 7.0)
 	if flags.has("thorne_owes") and not flags.has("thorne_owes_day"): flags["thorne_owes_day"] = day
 	if flags.has("thorne_refused"):
 		var id: String = flags["thorne_refused"]
@@ -857,6 +1041,82 @@ func _ui_shots() -> void:
 	_apply_time_of_day()
 	ui.update_hud()
 	await snap.call("low_sanity")
+	sanity = 100.0
+	ui.update_hud()
+	# day 1: carrying a box -> the guide arrow + the glowing shelf
+	day = 1
+	minute = 9 * 60
+	_apply_time_of_day()
+	world.letter.visible = false
+	var box := spawn_crate("candles", 8, Vector3(0, 0, -1))
+	player.pick_up(box)
+	player.global_position = Vector3(0.5, 0, 0.5)
+	player.rotation.y = 0.35
+	player.cam.rotation.x = -0.05
+	await snap.call("guide")
+	player.put_down()
+	box.queue_free()
+	# shoppers with want-bubbles
+	var shoppers := []
+	for i in 3:
+		var c := _new_customer(VoxelPerson.random_look(rng), "normal", Vector3(-2.5 + i * 1.6, 0, 1.8))
+		c.wants = [["bread", "milk", "tea"][i]]
+		c.path = [Vector3(-2.5 + i * 1.6, 0, -3.0)]
+		c.speed = 0.3
+		shoppers.append(c)
+	player.global_position = Vector3(-0.5, 0, 4.3)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = -0.12
+	_pop_money(24)
+	await snap.call("bubbles")
+	for c in shoppers:
+		customers.erase(c)
+		c.queue_free()
+	# the money pop at the till, from the shopkeeper's side
+	player.global_position = Vector3(-4.6, 0, 0.6)
+	player.rotation.y = PI
+	player.cam.rotation.x = -0.25
+	_pop_money(31)
+	await get_tree().create_timer(0.0).timeout
+	await snap.call("money")
+	# Thursday: Agnes's house. Friday night: the lamps go wrong.
+	world.show_mystery_house()
+	world.board_up_agnes()
+	player.global_position = Vector3(-5.0, 0, 11.5)
+	player.rotation.y = 3.0 * PI / 4.0
+	player.cam.rotation.x = 0.05
+	minute = 12 * 60
+	_apply_time_of_day()
+	await snap.call("agnes_boarded")
+	day = 5
+	minute = 21 * 60
+	player.global_position = Vector3(2.0, 0, 11.0)
+	player.rotation.y = PI / 2
+	_apply_time_of_day()
+	await snap.call("friday_street")
+	# 3 AM: something at the end of the street
+	day = 3
+	_start_night_walk([])
+	player.global_position = Vector3(0.0, 0, 6.6)
+	player.rotation.y = 1.84
+	player.cam.rotation.x = 0.02
+	await snap.call("night_walk")
+	night_walk = false
+	if walk_figure: walk_figure.queue_free()
+	# screen effects, one at a time, in the shop by day
+	sanity = 100.0
+	minute = 11 * 60
+	_apply_time_of_day()
+	player.global_position = Vector3(-4.6, 0, 0.9)
+	player.rotation.y = PI
+	player.cam.rotation.x = -0.1
+	for fx in ["", "fx_grain", "fx_vhs", "fx_crt", "fx_pixels"]:
+		for k in GameSettings.LABELS: GameSettings.data[k] = (k == fx)
+		ui.update_hud()
+		await snap.call("fx_" + (fx.substr(3) if fx != "" else "none"))
+	GameSettings.data["fx_grain"] = true
+	ui.show_settings(func(): pass)
+	await snap.call("settings")
 	get_tree().quit()
 
 # --------------------------------------------------------------------------- test bot (--autotest)

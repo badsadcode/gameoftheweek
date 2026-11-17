@@ -74,12 +74,12 @@ static func _bounds(n: Node, xf: Transform3D, acc: Array) -> void:
 	for c in n.get_children(): _bounds(c, t, acc)
 
 ## scale a model uniformly to fit a slot (w x h x d), standing on y = 0, centred
-static func fit_model(n: Node3D, slot: Vector3) -> void:
+static func fit_model(n: Node3D, slot: Vector3, turn_long := true) -> void:
 	var acc := [null]
 	_bounds(n, Transform3D.IDENTITY, acc)
 	if acc[0] == null: return
 	var b: AABB = acc[0]
-	if b.size.z > b.size.x * 1.3:
+	if turn_long and b.size.z > b.size.x * 1.3:
 		# long things (a loaf of bread) lie sideways along the shelf
 		n.rotation.y += PI / 2
 		acc = [null]

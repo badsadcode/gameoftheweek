@@ -13,9 +13,14 @@ func build(id: String, n: int) -> void:
 	units = n
 	var beyond: bool = Products.info(id).get("beyond", false)
 	var mat: Material = Vox.art_mat("cardboard", 1.8) if not beyond else Vox.obj_mat(Color(0.25, 0.12, 0.3))
-	mesh = Vox.box(self, Vector3(0, 0.25, 0), Vector3(0.6, 0.5, 0.5), mat, false)
+	var model := Products.model("props/crate")
+	if model and not beyond:
+		add_child(model)
+		Products.fit_model(model, Vector3(0.6, 0.5, 0.5), false)
+	else:
+		mesh = Vox.box(self, Vector3(0, 0.25, 0), Vector3(0.6, 0.5, 0.5), mat, false)
 	# a product-coloured stripe so you can tell boxes apart at a glance
-	Vox.box(self, Vector3(0, 0.25, 0.252), Vector3(0.6, 0.12, 0.01), Vox.obj_mat(Products.info(id)["color"]), false)
+	Vox.box(self, Vector3(0, 0.25, 0.262), Vector3(0.6, 0.12, 0.01), Vox.obj_mat(Products.info(id)["color"]), false)
 	body = StaticBody3D.new()
 	var cs := CollisionShape3D.new()
 	var shape := BoxShape3D.new()

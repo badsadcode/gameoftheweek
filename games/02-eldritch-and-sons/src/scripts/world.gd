@@ -9,7 +9,7 @@ extends Node3D
 var game
 var shelves: Array[Shelf] = []
 var lamps: Array[OmniLight3D] = []
-var lamp_meshes: Array[MeshInstance3D] = []
+var lamp_meshes: Array[Node3D] = []
 var street_lights: Array[OmniLight3D] = []
 var window_glows: Array[MeshInstance3D] = []
 var sun: DirectionalLight3D
@@ -19,6 +19,8 @@ var cctv_cam: Camera3D
 var sign_label: Label3D
 var register_label: Label3D
 var mystery_house: Node3D
+var agnes_house: Node3D        # across the street; boarded up from Thursday
+var agnes_glows: Array = []
 var empty_lot: Node3D
 var letter: Interactable
 var fancy := false   # true on Forward+ (desktop): shadows, volumetric fog, glow, SSAO
@@ -35,6 +37,7 @@ const PLAYER_START := Vector3(-4.6, 0, 0.7)
 func build(g) -> void:
 	game = g
 	_ground_and_street()
+	_decor()
 	_shop_shell()
 	_storeroom()
 	_counter()
@@ -122,8 +125,11 @@ func _storeroom() -> void:
 	Vox.block(self, Vector3(0.4, 0, -10.08), Vector3(1.6, 2.6, 0.1), Vox.mat("redplanks"), false)
 	Vox.label(self, "DELIVERIES", Vector3(1.2, 2.8, -10.0), 40, Color(0.9, 0.85, 0.7))
 	# bed
-	Vox.block(self, Vector3(-3.8, 0, -9.8), Vector3(1.4, 0.45, 2.2), Vox.mat("bed"))
-	Vox.block(self, Vector3(-3.7, 0.45, -9.7), Vector3(1.2, 0.18, 0.5), Vox.obj_mat(Color(0.92, 0.9, 0.85)), false)
+	if prop("bed", Vector3(-3.1, 0, -8.7), Vector3(1.4, 1.2, 2.2)):
+		Vox.block(self, Vector3(-3.8, 0, -9.8), Vector3(1.4, 0.45, 2.2), Vox.mat("bed")).visible = false  # keeps the collision
+	else:
+		Vox.block(self, Vector3(-3.8, 0, -9.8), Vector3(1.4, 0.45, 2.2), Vox.mat("bed"))
+		Vox.block(self, Vector3(-3.7, 0.45, -9.7), Vector3(1.2, 0.18, 0.5), Vox.obj_mat(Color(0.92, 0.9, 0.85)), false)
 	Interactable.make(self, Vector3(-3.1, 0.4, -8.7), Vector3(1.4, 0.8, 2.2),
 		func(g): return g.bed_prompt(), func(g): g.go_to_bed())
 	# grandpa's old crates for atmosphere
@@ -134,8 +140,9 @@ func _counter() -> void:
 	Vox.block(self, Vector3(-6.2, 0, 1.6), Vector3(3.2, 1.05, 1.0), Vox.mat("darkplanks"))
 	Vox.block(self, Vector3(-6.3, 1.05, 1.55), Vector3(3.4, 0.08, 1.1), Vox.obj_mat(Color(0.5, 0.33, 0.2)), false)
 	# till
-	var till := Vox.box(self, Vector3(-4.6, 1.3, 2.05), Vector3(0.6, 0.36, 0.46), Vox.obj_mat(Color(0.55, 0.5, 0.42)), false)
-	Vox.box(till, Vector3(0, 0.26, 0.1), Vector3(0.4, 0.16, 0.08), Vox.obj_mat(Color(0.1, 0.25, 0.12), true), false)
+	if not prop("till", Vector3(-4.6, 1.12, 2.05), Vector3(0.7, 0.55, 0.55), PI):
+		var till := Vox.box(self, Vector3(-4.6, 1.3, 2.05), Vector3(0.6, 0.36, 0.46), Vox.obj_mat(Color(0.55, 0.5, 0.42)), false)
+		Vox.box(till, Vector3(0, 0.26, 0.1), Vector3(0.4, 0.16, 0.08), Vox.obj_mat(Color(0.1, 0.25, 0.12), true), false)
 	register_label = Vox.label(self, "TILL", Vector3(-4.6, 1.52, 1.9), 30, Color(0.6, 1, 0.6))
 	register_label.pixel_size = 0.0025
 	register_label.rotation.y = PI
@@ -182,6 +189,11 @@ func _lamp(pos: Vector3, energy := 1.4, range_ := 9.0) -> void:
 	l.omni_range = range_
 	add_child(l)
 	lamps.append(l)
+	var pm := prop_node("lamp", pos + Vector3(0, 0.1, 0), Vector3(0.45, 0.5, 0.45))
+	if pm:
+		_no_shadows(pm)
+		lamp_meshes.append(pm)
+		return
 	var m := Vox.box(self, pos + Vector3(0, 0.25, 0), Vector3(0.3, 0.2, 0.3), Vox.obj_mat(Color(1, 0.85, 0.5), true), false)
 	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # the bulb mustn't shadow its own ceiling
 	lamp_meshes.append(m)
@@ -258,7 +270,9 @@ func _neighbourhood() -> void:
 	_house(Vector3(8.5, 0, -8), Vector3(11, 5, 13.6), "plaster", Color(0.8, 0.85, 0.75))
 	# across the street (facing the shop, so windows on the -Z side)
 	_house(Vector3(-27, 0, 16.5), Vector3(9, 6, 7), "brick", Color(0.7, 0.7, 0.75), -1)
-	_house(Vector3(-15, 0, 16.5), Vector3(9, 5, 7), "plaster", Color(0.75, 0.7, 0.6), -1)
+	var g0 := window_glows.size()
+	agnes_house = _house(Vector3(-15, 0, 16.5), Vector3(9, 5, 7), "plaster", Color(0.75, 0.7, 0.6), -1)
+	agnes_glows = window_glows.slice(g0)
 	_house(Vector3(9, 0, 16.5), Vector3(9, 6, 7), "darkplanks", Color.WHITE, -1)
 	_house(Vector3(20, 0, 16.5), Vector3(8, 5, 7), "brick", Color(0.6, 0.55, 0.55), -1)
 	# the empty lot... for now
@@ -287,8 +301,13 @@ func _neighbourhood() -> void:
 	mystery_house.process_mode = Node.PROCESS_MODE_DISABLED
 	# street lamps
 	for x in [-14.0, 0.0, 14.0]:
-		Vox.block(self, Vector3(x - 0.12, 0, 8.4), Vector3(0.24, 3.6, 0.24), Vox.obj_mat(Color(0.15, 0.15, 0.17)))
-		Vox.box(self, Vector3(x, 3.75, 8.5), Vector3(0.5, 0.35, 0.5), Vox.obj_mat(Color(1, 0.85, 0.55), true), false).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var pole := Vox.block(self, Vector3(x - 0.12, 0, 8.4), Vector3(0.24, 3.6, 0.24), Vox.obj_mat(Color(0.15, 0.15, 0.17)))
+		var sl := prop_node("streetlamp", Vector3(x, 0, 8.5), Vector3(0.9, 4.1, 0.9))
+		if sl:
+			_no_shadows(sl)
+			pole.visible = false   # keeps the collision
+		else:
+			Vox.box(self, Vector3(x, 3.75, 8.5), Vector3(0.5, 0.35, 0.5), Vox.obj_mat(Color(1, 0.85, 0.55), true), false).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var l := OmniLight3D.new()
 		l.position = Vector3(x, 3.4, 8.5)
 		l.light_color = Color(1, 0.8, 0.5)
@@ -297,6 +316,22 @@ func _neighbourhood() -> void:
 		l.light_energy = 0.0
 		add_child(l)
 		street_lights.append(l)
+
+## Agnes stopped coming in. Her windows and door are boarded up. From the inside, somehow.
+func board_up_agnes() -> void:
+	var wood := Vox.mat("darkplanks", Color(0.75, 0.7, 0.65))
+	for gl in agnes_glows:
+		window_glows.erase(gl)
+		gl.material_override = Vox.obj_mat(Color(0.03, 0.03, 0.04))
+		for i in 3:
+			var b := Vox.box(agnes_house, gl.position + Vector3(0, -0.4 + i * 0.4, -0.05), Vector3(1.3, 0.16, 0.05), wood, false)
+			b.rotation.z = sin(i * 2.1 + gl.position.x) * 0.12
+	var door_x := -15.0 + 4.5
+	for i in 4:
+		var b := Vox.box(agnes_house, Vector3(door_x, 0.5 + i * 0.55, 16.4), Vector3(1.5, 0.18, 0.05), wood, false)
+		b.rotation.z = sin(i * 1.3) * 0.18
+	var x := Vox.label(agnes_house, "KEEP OUT", Vector3(door_x, 2.65, 16.36), 44, Color(0.75, 0.1, 0.1))
+	x.rotation.y = PI
 
 func show_mystery_house() -> void:
 	empty_lot.visible = false
@@ -319,10 +354,13 @@ func _cctv() -> void:
 	cctv_viewport.add_child(cctv_cam)
 	cctv_cam.position = Vector3(-6.4, 3.5, 4.4)
 	cctv_cam.look_at_from_position(cctv_cam.position, Vector3(-1.5, 0.8, 1.0))
-	Vox.box(self, Vector3(-6.5, 3.6, 4.5), Vector3(0.25, 0.2, 0.35), Vox.obj_mat(Color(0.2, 0.2, 0.22)), false)
-	var red := Vox.box(self, Vector3(-6.4, 3.6, 4.32), Vector3(0.05, 0.05, 0.02), Vox.obj_mat(Color(1, 0.1, 0.1), true), false)
-	# monitor on the counter, screen facing the shopkeeper
-	Vox.box(self, Vector3(-5.75, 1.36, 2.15), Vector3(0.56, 0.44, 0.4), Vox.obj_mat(Color(0.25, 0.25, 0.27)), false)
+	if not prop("cctv", Vector3(-6.5, 3.45, 4.5), Vector3(0.35, 0.35, 0.45), PI * 0.75):
+		Vox.box(self, Vector3(-6.5, 3.6, 4.5), Vector3(0.25, 0.2, 0.35), Vox.obj_mat(Color(0.2, 0.2, 0.22)), false)
+		Vox.box(self, Vector3(-6.4, 3.6, 4.32), Vector3(0.05, 0.05, 0.02), Vox.obj_mat(Color(1, 0.1, 0.1), true), false)
+	# monitor on the counter, screen facing the shopkeeper (a model keeps the live picture in front of it)
+	var monitor_model := prop("monitor", Vector3(-5.75, 1.11, 2.17), Vector3(0.6, 0.52, 0.4), PI)
+	if not monitor_model:
+		Vox.box(self, Vector3(-5.75, 1.36, 2.15), Vector3(0.56, 0.44, 0.4), Vox.obj_mat(Color(0.25, 0.25, 0.27)), false)
 	var screen := MeshInstance3D.new()
 	var q := QuadMesh.new()
 	q.size = Vector2(0.48, 0.36)
@@ -333,8 +371,41 @@ func _cctv() -> void:
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	m.albedo_color = Color(0.75, 1.0, 0.8)
 	screen.material_override = m
-	screen.position = Vector3(-5.75, 1.36, 1.94)
+	screen.position = Vector3(-5.75, 1.36, 1.94 if not monitor_model else 1.95)
 	screen.rotation.y = PI
 	screen.layers = 4   # the camera must never film its own monitor (feedback loop)
 	add_child(screen)
 	Vox.label(self, "CAM 1", Vector3(-5.75, 1.62, 1.93), 22, Color(0.6, 1, 0.6)).rotation.y = PI
+
+# --------------------------------------------------------------------------- Tom's prop models
+## Drop res://assets/models/props/<id>.glb in and it replaces the blocky stand-in:
+##   till, monitor, cctv, lamp, bed, streetlamp, crate (crate.gd)
+## and these only appear once a model exists: bench, mailbox, bin, plant, clock, barrel, mirror
+## Any scale works: the model is shrunk/grown to fit its slot (w x h x d), standing on `pos`.
+func prop_node(id: String, pos: Vector3, slot: Vector3, rot_y := 0.0) -> Node3D:
+	var m := Products.model("props/" + id)
+	if m == null: return null
+	var holder := Node3D.new()
+	add_child(holder)
+	holder.add_child(m)
+	Products.fit_model(m, slot, false)
+	holder.position = pos
+	holder.rotation.y = rot_y
+	return holder
+
+func prop(id: String, pos: Vector3, slot: Vector3, rot_y := 0.0) -> bool:
+	return prop_node(id, pos, slot, rot_y) != null
+
+func _no_shadows(n: Node) -> void:
+	if n is GeometryInstance3D: (n as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for c in n.get_children(): _no_shadows(c)
+
+## optional street furniture: nothing is placed until Tom makes the model
+func _decor() -> void:
+	prop("bench", Vector3(-4.6, 0, 7.0), Vector3(1.8, 1.0, 0.7), PI)
+	prop("mailbox", Vector3(3.0, 0, 6.9), Vector3(0.5, 1.3, 0.5), PI)
+	prop("bin", Vector3(-2.4, 0, 6.8), Vector3(0.6, 0.9, 0.6))
+	prop("barrel", Vector3(-3.6, 0, -9.0) + Vector3(6.0, 0, 0.3), Vector3(0.7, 0.9, 0.7))
+	prop("plant", Vector3(6.2, 0, 4.1), Vector3(0.7, 1.4, 0.7))
+	prop("clock", Vector3(-0.2, 0, -5.3), Vector3(0.8, 2.2, 0.5))
+	prop("mirror", Vector3(-6.9, 1.2, -3.2), Vector3(0.1, 1.2, 0.8), PI / 2)

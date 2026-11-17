@@ -40,11 +40,20 @@ sanity above zero.
 - Fonts: Pixelify Sans and VT323 (SIL Open Font License, in `src/assets/fonts/`).
 - Voices: the letters (Grandpa, the Supplier, the Landlord) were voiced by Tom with ElevenLabs
   (`src/assets/voice/`, loudness-matched OGG). They play when you read a letter; "Listen again"
-  replays them, and they can be switched off in the pause menu.
+  replays them, and they can be switched off in Settings.
+- Settings (title screen and pause menu, saved to `user://settings.cfg`): volume, mouse sensitivity,
+  letter voices, fullscreen, and stackable screen effects (all in `scripts/sanity.gdshader`):
+  film grain (on by default), VHS tape, CRT scanlines, retro pixels. The sanity distortion sits on top.
+- `scripts/guide.gd` works out "what should I do now?" from the game state every frame: the
+  objective line on the HUD, the bouncing arrow (days 1-2), the glowing shelf for the box you carry,
+  and the list of deliveries on their way.
 - Art by Tom: pixel-art textures in `src/assets/textures/<name>.png` (walls, floors, street, products,
   faces, sign, catalogue, paper) override the generated ones by filename; product models in
   `src/assets/models/<product id>.glb` (any scale, auto-fitted to the shelf slot). Products with a
   texture but no model are shown as pixel cards; anything missing falls back to code-generated art.
+  Prop models in `src/assets/models/props/<id>.glb` replace the blocky stand-ins: `till`, `monitor`,
+  `cctv`, `lamp`, `bed`, `streetlamp`, `crate`. These only appear once a model exists: `bench`,
+  `mailbox`, `bin`, `barrel`, `plant`, `clock`, `mirror` (see `World._decor()`).
   Keep `detect_3d/compress_to=0` in the texture `.import` files so pixel art stays lossless.
 - `build.sh <out>` exports the Windows exe and the web build (downloads Godot + templates once).
 - Test bot: `godot --path src -- --autotest [--day=N] [--min=M] [--quit-at=M] [--trace]`
