@@ -49,6 +49,8 @@ var card_speed := 1.0
 var autotest := false
 var hum: AudioStreamPlayer
 var wind: AudioStreamPlayer
+var voice: AudioStreamPlayer   # voiced letters (recorded by Tom with ElevenLabs)
+var voices_on := true
 var ending := false
 
 # --------------------------------------------------------------------------- setup
@@ -68,6 +70,8 @@ func _ready() -> void:
 	add_child(ui)
 	ui.setup(self)
 	hum = Sfx.loop("hum", 0.18)
+	voice = AudioStreamPlayer.new()
+	add_child(voice)
 	wind = Sfx.loop("wind", 0.0)
 	_new_week()
 	_apply_time_of_day()
@@ -162,6 +166,9 @@ func on_panel_opened() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 func on_panel_closed() -> void:
+	if voice and voice.playing:
+		voice.stop()
+		hum.volume_db = linear_to_db(0.18 * Sfx.volume)
 	if started and not ending:
 		player.frozen = false
 		if not autotest: Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -300,7 +307,24 @@ func read_letter() -> void:
 		if not rules.has(r): rules.append(r)
 	Sfx.play("page", 0.8)
 	if autotest: return
-	ui.show_text(l[0], l[1], "Put it away" + ("  (rules added to your notebook)" if not l[2].is_empty() else ""))
+	var replay := Callable()
+	if _letter_voice(day) != null:
+		replay = func(): play_letter_voice(day)
+		play_letter_voice(day)
+	ui.show_text(l[0], l[1], "Put it away" + ("  (rules added to your notebook)" if not l[2].is_empty() else ""), Callable(), true, replay)
+
+func _letter_voice(d: int) -> AudioStream:
+	var path := "res://assets/voice/letter_day%d.ogg" % d
+	return load(path) if ResourceLoader.exists(path) else null
+
+## letters are read aloud (grandpa, the Supplier, the Landlord) while the text stays on screen
+func play_letter_voice(d: int) -> void:
+	var s := _letter_voice(d)
+	if s == null or not voices_on: return
+	voice.stream = s
+	voice.volume_db = linear_to_db(Sfx.volume)
+	voice.play()
+	hum.volume_db = linear_to_db(0.06)
 
 func bed_prompt() -> String:
 	if day == 5 and not flags.get("rent_paid", false): return "You can't sleep. The Landlord is coming."

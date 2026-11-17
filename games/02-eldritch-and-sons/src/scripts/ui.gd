@@ -229,7 +229,7 @@ func _show(p: Control) -> void:
 	panel_layer.add_child(root)
 	game.on_panel_opened()
 
-func show_text(title: String, body: String, close_text := "Close", on_close := Callable(), typewriter := true) -> void:
+func show_text(title: String, body: String, close_text := "Close", on_close := Callable(), typewriter := true, replay := Callable()) -> void:
 	var p := panel(720, 460, Color(0.7, 0.6, 0.4))
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
@@ -243,6 +243,8 @@ func show_text(title: String, body: String, close_text := "Close", on_close := C
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.add_child(b)
 	v.add_child(scroll)
+	if replay.is_valid():
+		v.add_child(button("Listen again", replay, 18, C_PURPLE))
 	v.add_child(button(close_text, func():
 		close_panel()
 		if on_close.is_valid(): on_close.call()))
@@ -383,7 +385,7 @@ func show_title(on_start: Callable) -> void:
 		close_panel()
 		on_start.call(), 28, C_GOLD))
 	v.add_child(button("Quit", func(): get_tree().quit(), 22))
-	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 2", 16, Color(0.6, 0.6, 0.7))
+	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 2\nLetters voiced by Tom (made with ElevenLabs)", 16, Color(0.6, 0.6, 0.7))
 	c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(c)
 	_show(p)
@@ -398,6 +400,11 @@ func show_pause(on_title: Callable) -> void:
 	v.add_child(button("Shop rules", func():
 		close_panel()
 		toggle_notebook(), 22))
+	var vb := button("Letter voices: %s" % ("On" if game.voices_on else "Off"), func(): pass, 20)
+	vb.pressed.connect(func():
+		game.voices_on = not game.voices_on
+		vb.text = "Letter voices: %s" % ("On" if game.voices_on else "Off"))
+	v.add_child(vb)
 	v.add_child(button("Quit to title", func():
 		close_panel()
 		on_title.call(), 22))

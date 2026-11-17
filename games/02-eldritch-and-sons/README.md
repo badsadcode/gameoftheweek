@@ -36,6 +36,9 @@ sanity above zero.
   voxel characters (rigid parts on shoulder/elbow/hip/knee pivots), synthesized sound.
 - The security camera is a second camera that can't see visual layer 2. Some customers live on layer 2.
 - Fonts: Pixelify Sans and VT323 (SIL Open Font License, in `src/assets/fonts/`).
+- Voices: the letters (Grandpa, the Supplier, the Landlord) were voiced by Tom with ElevenLabs
+  (`src/assets/voice/`, loudness-matched OGG). They play when you read a letter; "Listen again"
+  replays them, and they can be switched off in the pause menu.
 - `build.sh <out>` exports the Windows exe and the web build (downloads Godot + templates once).
 - Test bot: `godot --path src -- --autotest [--day=N] [--min=M] [--quit-at=M] [--trace]`
   plays the week, follows the rules and saves screenshots to the user data folder.

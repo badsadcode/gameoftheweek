@@ -18,13 +18,38 @@
   "bad_idea_rating": 5,
   "bad_idea_note": "an ancient cosmic entity is blocking aisle three",
   "progress": [
-    { "label": "Chaos thrown at Noor", "done": true },
-    { "label": "Noor's design doc", "done": true },
-    { "label": "Playable shop loop", "done": true },
-    { "label": "Robot playtested", "done": true },
-    { "label": "More weirdness", "done": false },
-    { "label": "Tom playtest", "done": false },
-    { "label": "Friday stream", "done": false }
+    {
+      "label": "Chaos thrown at Noor",
+      "done": true
+    },
+    {
+      "label": "Noor's design doc",
+      "done": true
+    },
+    {
+      "label": "Playable shop loop",
+      "done": true
+    },
+    {
+      "label": "Robot playtested",
+      "done": true
+    },
+    {
+      "label": "Voice acting",
+      "done": true
+    },
+    {
+      "label": "More weirdness",
+      "done": false
+    },
+    {
+      "label": "Tom playtest",
+      "done": false
+    },
+    {
+      "label": "Friday stream",
+      "done": false
+    }
   ],
   "controls": "Unzip and run EldritchAndSons.exe. WASD to move, mouse to look, E to use things, R to refuse a customer, Q to put a box down, Tab for the shop rules. Read grandpa's letter first."
 }
