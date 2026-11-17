@@ -320,3 +320,16 @@ a.mini:hover { transform: translateY(-4px) rotate(-.5deg); }
 .tag.engine { background: rgba(143, 211, 255, .12); color: var(--frost); border: 1px solid rgba(143, 211, 255, .4); }
 
 .entry img.devlog-shot { width: 100%; border-radius: 8px; margin: 6px 0 10px; border: 1px solid rgba(0, 0, 0, .15); box-shadow: 0 6px 14px rgba(0, 0, 0, .25); }
+
+/* studio logo (white artwork on transparent) */
+.hero h1.logo { margin: 6px auto 4px; line-height: 0; }
+.hero h1.logo img {
+  width: min(440px, 82vw); height: auto; margin: 0 auto;
+  filter: drop-shadow(6px 6px 0 rgba(255, 107, 61, .85)) drop-shadow(0 12px 22px rgba(0, 0, 0, .45));
+  transform: rotate(-2deg);
+  animation: logo-bob 6s ease-in-out infinite;
+}
+@keyframes logo-bob { 50% { transform: rotate(-1deg) translateY(-4px); } }
+.footer-logo { width: 110px; height: auto; opacity: .85; margin-bottom: 6px; }
+.brand-logo img { width: 70px; height: auto; display: block; filter: drop-shadow(3px 3px 0 rgba(255, 107, 61, .8)); }
+@media (prefers-reduced-motion: reduce) { .hero h1.logo img { animation: none; } }

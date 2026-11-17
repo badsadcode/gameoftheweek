@@ -56,3 +56,8 @@ Each week picks the right tool for its idea. `tools/build-all.sh` supports three
 However it's built, the output should contain `<exe_name>-win64.zip` and optionally `play/index.html`
 (a browser version). Fill in `genre` and `engine_label` in `game.json` so the site can show them.
 One broken week never takes the site down: the build warns and deploys the rest.
+
+## Brand
+
+The studio logo lives in `brand/` (white artwork on a transparent background, so use it on dark backgrounds).
+The site uses resized copies in `site/assets/`.
