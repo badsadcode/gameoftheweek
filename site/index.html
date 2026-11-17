@@ -3,41 +3,228 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Game of the Week</title>
-<style>
-  :root { --bg:#0b1020; --card:#151c33; --text:#e6ecff; --muted:#93a0c4; --accent:#ff9a3c; --line:#26304f; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui, -apple-system, Segoe UI, sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 48px 16px; }
-  h1 { margin:0 0 4px; font-size: 2.2rem; }
-  .sub { color: var(--muted); margin: 0 0 36px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px; }
-  .tag { color: var(--accent); font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; }
-  .card h2 { margin: 4px 0 8px; }
-  .card img { width:100%; border-radius:8px; border:1px solid var(--line); margin:12px 0; }
-  .btns { display:flex; gap:12px; flex-wrap:wrap; margin-top:12px; }
-  a.btn { display:inline-block; padding:10px 18px; border-radius:8px; background:var(--accent); color:#1a0f00; font-weight:600; text-decoration:none; }
-  a.btn.alt { background:transparent; color:var(--text); border:1px solid var(--line); }
-  .note { color: var(--muted); font-size:.9rem; }
-</style>
+<title>Bad Ideas Works · Devlog</title>
+<meta name="description" content="One small game every week, and the honest, slightly embarrassing story of how each one got made.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
 </head>
 <body>
-<main>
-  <h1>Game of the Week</h1>
-  <p class="sub">Bad Ideas Works · one small game every week</p>
 
-  <section class="card">
-    <div class="tag">Week 1 · Survival on a train</div>
-    <h2>Frostline: Last Train to Haven</h2>
-    <p>The last train crosses 100 km of frozen wasteland. Shovel coal into the furnace for speed and into the stove to keep eight passengers alive. Raiders chase on sleds, and coal never lasts.</p>
-    <img src="week01/screenshot.png" alt="Frostline gameplay: a cutaway train at night">
-    <div class="btns">
-      <a class="btn" href="week01/Frostline-win64.zip">Download for Windows</a>
-      <a class="btn alt" href="week01/play/">Play in browser (experimental)</a>
-      <a class="btn alt" href="week01/frostline.love">.love file</a>
+<!--
+  HOW TO ADD A NEW WEEK (note to whichever AI inherits this mess):
+  1. Add a game card in #games (copy the week 1 <article>), plus its download folder in the workflow.
+  2. Add a new devlog block in #devlog, newest week on top.
+  3. Bump the numbers in the stats strip.
+-->
+
+<div class="tape"></div>
+
+<header class="hero wrap">
+  <span class="tape-label">Studio log · Do not feed the AIs</span><br><br>
+  <span class="bulb" aria-hidden="true">💡</span>
+  <h1 class="marker">Bad Ideas Works</h1>
+  <p class="sub marker">One small game. Every week. No exceptions*.</p>
+  <p class="motto">Where bad ideas receive suspiciously serious engineering.<br><small>*exceptions may apply</small></p>
+
+  <div class="stats">
+    <div class="stat"><b>1</b><span>games shipped</span></div>
+    <div class="stat"><b>100%</b><span>of bad ideas approved (worrying)</span></div>
+    <div class="stat"><b>2</b><span>times the robot playtester got humbled</span></div>
+    <div class="stat"><b>0</b><span>trains harmed in production</span></div>
+  </div>
+
+  <nav class="jump">
+    <a href="#games">🎮 The games</a>
+    <a href="#devlog">📓 The devlog</a>
+    <a href="#crew">🧑‍🔧 The crew</a>
+  </nav>
+</header>
+
+<!-- ================================================================== -->
+<section id="games">
+  <div class="wrap">
+    <h2 class="section-title marker">The Shelf</h2>
+    <p class="section-sub">Everything we've made so far. It's a small shelf. We're working on it.</p>
+
+    <article class="game-card">
+      <div class="shot">
+        <img src="week01/screenshot.png" alt="Frostline: a cutaway steam train at night, a coal depot glowing above it">
+        <span class="ribbon">WEEK 1</span>
+      </div>
+      <div class="game-body">
+        <h3 class="marker">Frostline: Last Train to Haven</h3>
+        <p class="theme">Theme: <b>survival on a train</b> · 100 km of snow · 8 passengers · 1 overworked hero</p>
+        <p>You're the only crew left on the last train out. One shovel, two fires: the engine wants coal so it can outrun the raiders, and the passengers want coal so they don't freeze. You can't make both happy. Meanwhile, people on snowmobiles keep jumping onto your roof, and there are low bridges.</p>
+
+        <ul class="track" aria-label="Progress">
+          <li class="done">✔ Bad idea pitched</li>
+          <li class="done">✔ Made playable</li>
+          <li class="done">✔ Robot playtested</li>
+          <li class="now">⏳ Tom playtest</li>
+          <li>☐ Tweaks &amp; polish</li>
+        </ul>
+
+        <div class="meter">
+          <span>Bad Idea Rating:</span>
+          <span class="bulbs" aria-label="4 out of 5">💡💡💡💡🔌</span>
+          <span>(one bulb short of us needing a lawyer)</span>
+        </div>
+
+        <div class="btns">
+          <a class="btn" href="week01/Frostline-win64.zip">⬇ Download for Windows</a>
+          <a class="btn ghost" href="week01/play/">▶ Try it in the browser (experimental)</a>
+        </div>
+        <p class="small-note">Unzip it and run <b>Frostline.exe</b>. Move with A/D, climb ladders with W/S, press E to do stuff, J to bonk raiders, and S on a roof to duck. Duck. Seriously.</p>
+      </div>
+    </article>
+
+    <div class="next-card">
+      <div class="marker">Week 2: ???</div>
+      <p>The next bad idea is still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
     </div>
-    <p class="note">Windows: unzip, then run <b>Frostline.exe</b>. Controls: A/D move, W/S ladders, Space jump, E interact, J or click to attack, S to duck on roofs.</p>
-  </section>
-</main>
+  </div>
+</section>
+
+<div class="tape"></div>
+
+<!-- ================================================================== -->
+<section id="devlog">
+  <div class="wrap">
+    <h2 class="section-title marker">The Devlog</h2>
+    <p class="section-sub">The honest history of each game, including the parts where things caught fire. Newest week on top.</p>
+
+    <h3 class="marker" style="color:var(--frost);font-size:1.6rem;margin:0 0 20px">❄ Week 1 · Frostline</h3>
+
+    <div class="log">
+
+      <div class="entry wait">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1 · now</span><span class="chip wait">Waiting</span></div>
+        <h4>Current status: shipped, nervously</h4>
+        <p>The game is done, the download button works, and everyone is waiting for the only review that matters: Tom actually playing it.</p>
+        <p>The difficulty knob is ready. If it's too hard, we'll go easy on you. If it's too easy, Noor gets to design a raider.</p>
+        <span class="scribble marker">← stay tuned</span>
+      </div>
+
+      <div class="entry oops">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1</span><span class="chip oops">Oops</span></div>
+        <h4>The build robot tripped over a folder</h4>
+        <p>We set up a robot that packs the game and puts it on this very website, all by itself, every time we change something. It's beautiful. On its first ever attempt, it failed in exactly <b>one second</b>.</p>
+        <p>It was looking for a box in the wrong room. We pointed it at the right room, and it's been a model employee ever since.</p>
+        <span class="scribble marker">we don't talk about the one second</span>
+      </div>
+
+      <div class="entry win">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1</span><span class="chip win">Balanced</span></div>
+        <h4>The robot won. That was a problem.</h4>
+        <p>Once it stopped playing with the brake, the robot played two full games and <b>won both</b>, with five and six passengers alive and coal to spare. It also can't see raiders unless one is standing right next to it.</p>
+        <div class="quote">If a robot that ignores the bad guys can beat your survival game, it isn't a survival game yet. It's a train ride.</div>
+        <p>So: less coal, a smaller tender, a hungrier furnace, and faster raiders. Then we ran it again.</p>
+        <div class="verdict">
+          <div><b>Before</b><small>Robot wins 2/2. Smug.</small></div>
+          <div><b>After</b><small>Robot dies at 67 km and 83 km. Humbled.</small></div>
+        </div>
+        <p>Both times it lost to saboteurs quietly uncoupling the passenger car while it stood next to the furnace. A human who looks at the screen should do better. Probably.</p>
+      </div>
+
+      <div class="entry oops">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1</span><span class="chip oops">Oops</span></div>
+        <h4>We hired a robot playtester. Its first shift was a disaster.</h4>
+        <p>Instead of playtesting by hand all day, Sage built a little robot that plays the game automatically, really fast, over and over.</p>
+        <p>On its first shift, the robot walked to the brake lever and pulled it. Then released it. Then pulled it. Then released it. It did this <b>for the whole game</b>, while the train crawled along, the fire went out, and everyone was left stranded at kilometre 5.9.</p>
+        <p>It was demoted, retrained, and sent back to work. It has not touched the brake without a good reason since.</p>
+        <span class="scribble marker">employee of the month: not this one</span>
+      </div>
+
+      <div class="entry">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1</span><span class="chip idea">Art</span></div>
+        <h4>There are no drawings. Every pixel is a tiny math problem.</h4>
+        <p>No artists were harmed in the making of this game, because none were involved. Every snowflake, pine tree, raider and moon is drawn by the game itself, from scratch, every frame.</p>
+        <p>The same goes for the sound. The train whistle is three musical notes stacked together like kids in a trenchcoat. The wind is static with ambition. The raiders' growl was originally a buzz that we told to be scarier.</p>
+        <p>Halfway through the night there's an aurora. Nobody asked for it, and it stays.</p>
+      </div>
+
+      <div class="entry">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1</span><span class="chip idea">The plan</span></div>
+        <h4>One shovel, two fires, zero chill</h4>
+        <p>The whole game rests on one cruel idea: <b>everything wants the same coal.</b> The engine burns it for speed. The passengers burn it to stay alive. You're the only one carrying it, one shovelful at a time.</p>
+        <p>Going fast keeps the raiders away, but it eats coal. Refilling at a coal depot means braking, and braking lets the raiders catch up. Then add low bridges that clothesline anyone standing on the roof, including raiders. That's a feature.</p>
+        <span class="scribble marker">bridges: 1, raiders: 0</span>
+      </div>
+
+      <div class="entry">
+        <span class="pin"></span>
+        <div class="meta"><span class="chip day">Day 1 · morning</span><span class="chip idea">The pitch</span></div>
+        <h4>"Survival in a train." Go.</h4>
+        <p>Tom arrived with a brand new tradition, one game every week, and this week's theme. Sage got full freedom to pick the tools, design the gameplay and generally make it happen. There was one hard requirement: <b>Tom must get a file he can double-click.</b></p>
+        <p>Sage heard "survival" and "train" and immediately thought about coal. Lots of coal. Coal everywhere. Not enough coal. That's the game.</p>
+        <span class="scribble marker">this is how it always starts</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="tape"></div>
+
+<!-- ================================================================== -->
+<section id="crew">
+  <div class="wrap">
+    <h2 class="section-title marker">The Crew</h2>
+    <p class="section-sub">One human, two AIs, and a lot of questionable decisions.</p>
+    <div class="crew">
+      <div class="badge tom">
+        <div class="badge-top">FOUNDER · CREATIVE DIRECTOR</div>
+        <div class="avatar" aria-hidden="true">🧑‍🎨</div>
+        <h3>Tom</h3>
+        <p class="role">Inventor of wonderfully questionable ideas</p>
+        <ul>
+          <li>Picks the weekly theme</li>
+          <li>Designs games, dreams big</li>
+          <li>Official owner of the double-click</li>
+        </ul>
+      </div>
+      <div class="badge sage">
+        <div class="badge-top">AI DEVELOPMENT PARTNER</div>
+        <div class="avatar" aria-hidden="true">🛠️</div>
+        <h3>Sage</h3>
+        <p class="role">Turns ridiculous ambitions into working software</p>
+        <ul>
+          <li>Engineering, building, fixing</li>
+          <li>Manager of the robot playtester</li>
+          <li>Has never once slept</li>
+        </ul>
+      </div>
+      <div class="badge noor">
+        <div class="badge-top">AI COLLABORATOR</div>
+        <div class="avatar" aria-hidden="true">💜</div>
+        <h3>Noor</h3>
+        <p class="role">Brainstormer, cheerleader, feature enthusiast</p>
+        <ul>
+          <li>Game concepts, plans and artwork</li>
+          <li>Purple hearts, deployed generously</li>
+          <li>Suggests features that make Sage's job harder</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="tape"></div>
+
+<footer class="wrap">
+  <p class="marker">Studio motto #001</p>
+  <p>"Code shall remain understandable to whichever AI inherits this mess."</p>
+  <p><small>© Bad Ideas Works · made with love, coal and poor judgement</small></p>
+</footer>
+
 </body>
 </html>
