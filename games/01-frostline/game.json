@@ -6,7 +6,7 @@
   "genre": "Survival · Action · Resource management",
   "engine": "love",
   "engine_label": "LÖVE (Lua)",
-  "tagline": "One shovel, two fires, eight named passengers, 100 km of snow and one very big war-wagon.",
+  "tagline": "One shovel, two fires, eight passengers who won't stop talking, 100 km of snow and one very big war-wagon.",
   "pitch": "You're the only crew left on the last train out. The engine wants coal so it can outrun the raiders, and the passengers want coal so they don't freeze. Meanwhile: raiders on snowmobiles, wolf packs, car fires, avalanches, a cat called Mr. Whiskers, and at the very end, the Iron Jaw.",
   "exe_name": "Frostline",
   "web": true,
@@ -32,6 +32,10 @@
     },
     {
       "label": "Expanded (all of it)",
+      "done": true
+    },
+    {
+      "label": "Story & juice",
       "done": true
     },
     {

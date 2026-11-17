@@ -145,6 +145,16 @@ local function build()
     return (math.sin(TAU * 900 * t * (1 - t)) * 0.4 + noise() * 0.3) * math.exp(-t * 9)
   end)
 
+  do local lp = lowpass(0.35)
+    d.radio = render(0.45, function(t)
+      local burst = (math.sin(t * 90) > 0.3) and 1 or 0.3
+      return (lp(noise()) * burst * 0.8 + math.sin(TAU * 1400 * t) * 0.08) * math.min(1, t * 30) * math.exp(-t * 4)
+    end) end
+
+  d.blip = render(0.09, function(t)
+    return (math.sin(TAU * 620 * t) + 0.4 * math.sin(TAU * 930 * t)) * math.exp(-t * 35) * 0.35
+  end)
+
   return d
 end
 

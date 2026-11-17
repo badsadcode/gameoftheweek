@@ -46,6 +46,7 @@ local function die(G, b)
   G.stats.boss = true
   G.scrap = G.scrap + 10
   G.toast("THE IRON JAW IS DOWN! +10 scrap. Chains snapped!", { 1, 0.85, 0.3 }, 6)
+  if G.onBossDown then G.onBossDown() end
   Audio.play("boom", 1, 0.6)
   Audio.play("uncouple", 0.8, 1.3)
 end
@@ -59,6 +60,7 @@ local function explode(G, x, y)
   if b and b.state == "fight" and math.abs(x - b.x) < B.HALF then
     b.hp = b.hp - 1
     b.flash = 0.35
+    if G.onBossHit then G.onBossHit() end
     if b.hp <= 0 then die(G, b)
     else G.toast("BOOM! The Iron Jaw is cracking: " .. b.hp .. " more!", { 1, 0.75, 0.3 }, 3) end
   elseif b and b.state ~= "dying" then

@@ -92,6 +92,7 @@ local function derail(G)
   G.coal = math.max(0, G.coal - 5)
   if love.math.random() < 0.5 then Passengers.loseRandom(G, "derail") end
   G.toast("DERAILED! ...well, mostly. We're back on the rails, barely.", { 1, 0.45, 0.35 }, 5)
+  if G.onBigImpact then G.onBigImpact(0.07) end
   for _ = 1, 3 do
     local c = T.cars[love.math.random(T.firstAttached, #T.cars)]
     Particles.burst(G, c.x + c.w / 2, T.RAIL_Y - 10, 20, { speed = 300, color = { 1, 0.7, 0.3 }, life = 0.6, add = true })

@@ -3,6 +3,7 @@ local T = require("train")
 local U = require("util")
 local Audio = require("audio")
 local Input = require("input")
+local Particles = require("particles")
 
 local Player = {}
 Player.__index = Player
@@ -22,6 +23,8 @@ function Player.new()
   p.stun, p.hurtT, p.lastHurt = 0, 0, 99
   p.overheadCD = 0
   p.anim = 0
+  p.squash = 0      -- >0 squashed (landing), <0 stretched (jumping)
+  p.stepT, p.breathT = 0, 1
   return p
 end
 
@@ -68,6 +71,7 @@ function Player:jump()
   if self.onGround and not self.ducking then
     self.vy = -640
     self.onGround = false
+    self.squash = -0.2
     Audio.play("jump", 0.3)
   end
 end
@@ -134,9 +138,36 @@ function Player:update(G, dt)
   self.vx = U.approach(self.vx, target, accel * dt)
   if dir ~= 0 then self.facing = dir end
 
+  local wasGround, preVy = self.onGround, self.vy
   T.stepBody(self, dt)
   if self.onGround and math.abs(self.vx) > 10 then
     self.anim = self.anim + dt * math.abs(self.vx) * 0.055
+  end
+
+  -- juice: landing squash + dust, snowy footsteps on roofs, frosty breath
+  self.squash = U.approach(self.squash, 0, dt * 1.6)
+  if not wasGround and self.onGround and preVy > 350 then
+    self.squash = math.min(0.28, preVy / 2200)
+    Particles.burst(G, self.x, self.y, 8, { speed = 110, vy = -60, color = { 0.92, 0.95, 1 }, life = 0.45, g = 300, size = 2.5 })
+    Audio.play("clack", 0.25, 0.6)
+  end
+  local onRoof = self.y <= T.ROOF_Y + 2
+  self.stepT = self.stepT - dt
+  if onRoof and self.onGround and math.abs(self.vx) > 60 and self.stepT <= 0 then
+    self.stepT = 0.16
+    Particles.add(G, { x = self.x - self.facing * 6, y = self.y - 2, vx = -self.vx * 0.2 + U.rand(-20, 20), vy = U.rand(-60, -20),
+      life = 0.4, size = U.rand(2, 3.5), g = 200, color = { 0.95, 0.97, 1 }, alpha = 0.8 })
+  end
+  self.breathT = self.breathT - dt
+  if self.breathT <= 0 then
+    self.breathT = U.rand(1.1, 1.7)
+    if onRoof or self.warmth < 60 or self.climbing then
+      local hy = self.y - (self.ducking and 32 or 51)
+      for k = 1, 3 do
+        Particles.add(G, { x = self.x + self.facing * 10, y = hy, vx = self.facing * U.rand(20, 40) - 30, vy = U.rand(-12, 4),
+          life = 0.9, size = 2 + k, grow = 5, color = { 1, 1, 1 }, alpha = 0.3, drag = 1 })
+      end
+    end
   end
 end
 

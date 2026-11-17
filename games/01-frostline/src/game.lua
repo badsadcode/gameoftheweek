@@ -20,6 +20,8 @@ local Upgrades = require("upgrades")
 local Render = require("render")
 local HUD = require("hud")
 local Particles = require("particles")
+local Story = require("story")
+local FX = require("fx")
 local lg = love.graphics
 
 local Game = {}
@@ -37,6 +39,13 @@ local HINTS = {
 }
 
 local menuStack = {}
+local fade = { a = 0, phase = nil, fn = nil } -- screen transitions
+
+-- fade to black, run fn, fade back in
+function Game.transition(fn)
+  if fade.phase then return end
+  fade.phase, fade.fn = "out", fn
+end
 
 function Game.state() return G end
 
@@ -73,7 +82,7 @@ function Game.newRun(state)
     stove = 70, carTemp = 14, ambient = -22, freeze = 0, bandages = 3, brake = false,
     scrap = 2, upgrades = {}, soupT = 25, pipT = 0,
     scroll = 0, camX = 0, shake = 0, flash = 0, toasts = {}, particles = {}, items = {},
-    stats = { kills = 0, taken = 0, shoveled = 0, outrun = 0, knocked = 0, fires = 0, cured = 0, chains = 0, upgrades = 0, boss = false },
+    stats = { kills = 0, taken = 0, shoveled = 0, outrun = 0, knocked = 0, fires = 0, cured = 0, chains = 0, upgrades = 0, boss = false, favours = 0 },
     stallT = 0, detached = nil, loadAcc = 0, chugT = 0, clackT = 0, smokeT = 0, hintIdx = 1, endT = 0,
     windowColor = { 0.1, 0.1, 0.2 }, menu = nil,
   }
@@ -89,6 +98,16 @@ function Game.newRun(state)
   G.spawnWolves = function(n) Raiders.spawnWolves(G, n) end
   G.deployFromBoss = function(x) Raiders.deployFromBoss(G, x) end
   G.onRaiderLanded = Game.onRaiderLanded
+  G.onPassengerLost = function(p) Story.onPassengerLost(G, p) end
+  G.onRaiderKilled = function() FX.hitstop(G, 0.08); FX.punch(G, 0.02) end
+  G.onBossHit = function() FX.hitstop(G, 0.14); FX.punch(G, 0.05) end
+  G.onBossDown = function() FX.whiteout(G, 0.9); FX.punch(G, 0.1); Story.react(G, "victory", true) end
+  G.onBigImpact = function(a) FX.punch(G, a) end
+  FX.init(G)
+  Story.initRadio(G)
+  Story.initBarks(G)
+  Story.initRequests(G)
+  if G.state == "play" and not Game.skipIntro then G.intro = Story.newIntro() end
   Raiders.init(G)
   Events.init(G)
   Hazards.init(G)
@@ -144,7 +163,7 @@ end
 
 function Game.titleMenu()
   local m = Menu.new("", {
-    { label = "Depart for Haven", action = function() Game.newRun("play"); Audio.play("whistle", 0.6) end },
+    { label = "Depart for Haven", action = function() Game.transition(function() Game.newRun("play"); Audio.play("whistle", 0.6) end) end },
     { label = "Settings", action = function() Game.openMenu(Game.settingsMenu()) end },
     { label = "Quit", action = function() love.event.quit() end },
   }, { rowH = 40, noTitle = true })
@@ -156,7 +175,7 @@ function Game.pauseMenu()
   local m = Menu.new("Paused", {
     { label = "Resume", action = Game.closeMenu },
     { label = "Settings", action = function() Game.openMenu(Game.settingsMenu()) end },
-    { label = "Quit to title", action = function() Game.newRun("title") end },
+    { label = "Quit to title", action = function() Game.transition(function() Game.newRun("title") end) end },
   })
   m.kind = "pause"
   return m
@@ -220,7 +239,7 @@ local function updateTrain(dt)
   end
   local rate = (target < G.speed) and (G.brake and 0.9 or 0.35) or 0.22
   G.speed = math.max(0, G.speed + (target - G.speed) * math.min(1, rate * dt))
-  local burn = (0.8 + G.speed / 100 * 1.3) * (Passengers.has(G, "ivo") and 0.85 or 1)
+  local burn = (0.8 + G.speed / 100 * 1.3) * (Passengers.has(G, "ivo") and 0.85 or 1) * (G.perkTuned and 0.85 or 1)
   G.fuel = math.max(0, G.fuel - burn * dt)
   G.dist = G.dist + G.speed * dt / 400
   G.progress = U.clamp(G.dist / GOAL_KM, 0, 1)
@@ -273,6 +292,7 @@ local function updateHeat(dt)
   if rate < 0 then
     rate = rate * (1 + G.blizzard * 0.9)
     if Upgrades.has(G, "coat") then rate = rate * 0.6 end
+    if G.perkScarf then rate = rate * 0.75 end
   end
   P.warmth = U.clamp(P.warmth + rate * dt, 0, 100)
   if P.warmth <= 0 then
@@ -288,12 +308,16 @@ local function updateItems(dt)
     local it = G.items[i]
     it.t = it.t + dt
     if it.t > 0.3 and math.abs(it.x - P.x) < 34 and math.abs(it.y - P.y) < 50 then
-      if it.kind == "scrap" then
+      if it.kind == "toy" then
+        G.hasToy = true
+        FX.float(G, it.x, it.y - 60, "Pip's toy train!", { 1, 0.85, 0.4 })
+        G.toast("You found Pip's toy train! Bring it to Pip.", { 1, 0.85, 0.4 }, 4)
+      elseif it.kind == "scrap" then
         G.scrap = G.scrap + it.amount
-        G.toast("+" .. it.amount .. " scrap", { 0.75, 0.8, 0.9 }, 2)
+        FX.float(G, it.x, it.y - 50, "+" .. it.amount .. " scrap", { 0.8, 0.85, 0.95 })
       else
         G.coal = math.min(G.maxCoal, G.coal + it.amount)
-        G.toast("+" .. it.amount .. " coal", { 0.8, 0.85, 1 }, 2)
+        FX.float(G, it.x, it.y - 50, "+" .. it.amount .. " coal", { 0.75, 0.75, 0.85 })
       end
       Audio.play("pickup", 0.6, it.kind == "scrap" and 1.3 or 1)
       table.remove(G.items, i)
@@ -405,6 +429,7 @@ local function win()
   G.fire, G.avalanche = nil, nil
   Audio.play("whistle", 0.8)
   Audio.play("win", 0.6)
+  Story.react(G, "haven", true)
   computeScore(true)
 end
 
@@ -431,6 +456,18 @@ end
 ---------------------------------------------------------------------------
 function Game.update(dt)
   G.dt = dt
+  if fade.phase == "out" then
+    fade.a = math.min(1, fade.a + dt / 0.35)
+    if fade.a >= 1 then
+      local fn = fade.fn
+      fade.phase, fade.fn = "in", nil
+      if fn then fn() end
+    end
+  elseif fade.phase == "in" then
+    fade.a = math.max(0, fade.a - dt / 0.45)
+    if fade.a <= 0 then fade.phase = nil end
+  end
+  FX.update(G, dt)
   for i = #G.toasts, 1, -1 do
     G.toasts[i].t = G.toasts[i].t - dt
     if G.toasts[i].t <= 0 then table.remove(G.toasts, i) end
@@ -439,6 +476,18 @@ function Game.update(dt)
     Music.update(dt)
     return -- world frozen while a menu is open
   end
+  if G.hitstop > 0 and G.state == "play" then
+    G.hitstop = G.hitstop - dt
+    return -- impact freeze-frame
+  end
+  if G.intro and not G.intro.done and G.state == "play" then
+    Story.updateIntro(G, dt)
+    G.scroll = G.scroll + G.speed * Events.PX_PER_KMH * dt
+    G.windowColor = BG.skyColor(G.progress)
+    ambient(dt)
+    Particles.update(G, dt)
+    return
+  end
   G.time = G.time + dt
   G.windowColor = BG.skyColor(G.progress)
   G.shake = math.max(0, G.shake - dt * 30)
@@ -446,6 +495,9 @@ function Game.update(dt)
 
   if G.state == "title" then
     G.scroll = G.scroll + G.speed * Events.PX_PER_KMH * dt
+    -- slow cinematic pan along the train
+    local lo, hi = -150, T.LENGTH - VW + 220
+    G.camX = (lo + hi) / 2 + math.sin(G.time * 0.07) * (hi - lo) / 2
     ambient(dt)
     Particles.update(G, dt)
     return
@@ -478,6 +530,9 @@ function Game.update(dt)
   end
   G.soupT = math.max(0, G.soupT - dt)
   G.pipT = math.max(0, G.pipT - dt)
+  Story.updateRadio(G, dt)
+  Story.updateBarks(G, dt)
+  Story.updateRequests(G, dt)
   updateTrain(dt)
   updateDetached(dt)
   G.player:update(G, dt)
@@ -517,7 +572,9 @@ function Game.currentInteraction()
   if math.abs(x - T.FURNACE_X) < 40 then
     if P.carrying == "coal" then
       return { label = "Feed the furnace", fn = function()
-        G.fuel = math.min(100, G.fuel + (Upgrades.has(G, "bellows") and 17 or 12))
+        local add = Upgrades.has(G, "bellows") and 17 or 12
+        G.fuel = math.min(100, G.fuel + add)
+        FX.float(G, T.FURNACE_X, T.FLOOR_Y - 100, "+" .. add .. " fuel", { 1, 0.65, 0.25 })
         P.carrying = nil
         G.stats.shoveled = G.stats.shoveled + 1
         Audio.play("whoosh", 0.7)
@@ -554,6 +611,8 @@ function Game.currentInteraction()
     end }
   end
   if T.firstAttached <= 2 and car and car.kind == "passenger" then
+    local favour = Story.interaction(G, P)
+    if favour and not (favour.disabled and P.carrying == "coal" and math.abs(x - T.STOVE_X) < 50) then return favour end
     local sick = Hazards.firstSick(G)
     if P.carrying == "medicine" and sick then
       return { label = "Give medicine to " .. sick.name, fn = function()
@@ -568,6 +627,8 @@ function Game.currentInteraction()
       if P.carrying == "coal" then
         return { label = "Feed the stove", fn = function()
           G.stove = math.min(100, G.stove + 30)
+          FX.float(G, T.STOVE_X, T.FLOOR_Y - 90, "+30 heat", { 1, 0.82, 0.35 })
+          if love.math.random() < 0.35 then Story.react(G, "stoked") end
           P.carrying = nil
           G.stats.shoveled = G.stats.shoveled + 1
           Audio.play("whoosh", 0.6, 1.2)
@@ -579,7 +640,7 @@ function Game.currentInteraction()
           return { label = "Take Gran Olga's soup", fn = function()
             P.warmth = 100
             P.health = math.min(100, P.health + 25)
-            G.soupT = 60
+            G.soupT = G.perkSoup and 30 or 60
             G.toast("Gran Olga: \"Eat! You're all bones.\" (+warmth, +health)", { 1, 0.85, 0.6 }, 4)
             Audio.play("pickup", 0.6, 0.9)
           end }
@@ -629,6 +690,7 @@ local function playerAttack()
   if hit then
     Audio.play("hit", 0.8, U.rand(0.9, 1.1))
     G.addShake(4)
+    FX.hitstop(G, 0.05)
   end
 end
 
@@ -645,6 +707,10 @@ function Game.action(a)
     return
   end
   local s = G.state
+  if s == "play" and G.intro and not G.intro.done then
+    Story.skipIntro(G)
+    return
+  end
   if s == "play" then
     if a == "pause" or a == "roster" then Game.openMenu(Game.pauseMenu())
     elseif a == "jump" then G.player:jump()
@@ -656,14 +722,19 @@ function Game.action(a)
   elseif s == "over" or s == "win" then
     local ready = s == "over" and G.endT > 1 or (G.endT > 5)
     if ready then
-      if a == "confirm" then Game.newRun("play"); Audio.play("whistle", 0.6)
-      elseif a == "back" then Game.newRun("title") end
+      if a == "confirm" then Game.transition(function() Game.newRun("play"); Audio.play("whistle", 0.6) end)
+      elseif a == "back" then Game.transition(function() Game.newRun("title") end) end
     end
   end
 end
 
 -- one key can mean several actions (Space = jump & confirm, Esc = pause & back): context decides
 local function dispatch(actions)
+  if fade.phase then return end
+  if G.state == "play" and G.intro and not G.intro.done and not G.menu then
+    if #actions > 0 then Story.skipIntro(G) end
+    return
+  end
   local inMenu = G.menu or G.state ~= "play"
   if inMenu then
     if Input.has(actions, "back") then Game.action("back"); return end
@@ -700,6 +771,15 @@ function Game.draw()
   end
   local rock = math.sin(G.time * 9) * math.min(1.5, G.speed / 60)
 
+  -- camera punch: zoom in a touch around the screen centre
+  lg.push()
+  if G.punch > 0 then
+    local z = 1 + G.punch
+    lg.translate(VW / 2, VH / 2)
+    lg.scale(z, z)
+    lg.translate(-VW / 2, -VH / 2)
+  end
+
   BG.drawBack(G)
 
   lg.push()
@@ -728,6 +808,7 @@ function Game.draw()
       coat = look.coat, pants = look.pants, hat = look.hat, scarf = look.scarf, skin = look.skin, style = look.style,
       facing = P.facing, anim = P.anim, moving = math.abs(P.vx) > 10 and P.onGround, duck = P.ducking or P.stun > 0,
       attackT = P.attackT, carry = P.carrying, flash = P.hurtT > 0, time = G.time,
+      squash = P.squash, lean = P.onGround and not P.ducking and (P.vx / 260) * 0.09 or 0,
     })
   end
   for _, r in ipairs(G.raiders) do
@@ -757,7 +838,9 @@ function Game.draw()
   Render.lights(G)
   Particles.draw(G, "front", true)
   Particles.draw(G, "sled", true)
-  if G.state == "play" and not G.menu then
+  Story.drawWorld(G, HUD.fonts)
+  FX.drawFloats(G, HUD.fonts.float)
+  if G.state == "play" and not G.menu and not (G.intro and not G.intro.done) then
     HUD.nameTags(G)
     HUD.prompt(G, Game.currentInteraction())
   end
@@ -777,14 +860,28 @@ function Game.draw()
     lg.rectangle("fill", 0, 0, 40, VH); lg.rectangle("fill", VW - 40, 0, 40, VH)
   end
 
+  lg.pop() -- camera punch
+
+  if G.whiteout > 0 then
+    lg.setColor(1, 1, 1, G.whiteout * 0.8)
+    lg.rectangle("fill", 0, 0, VW, VH)
+  end
+
   if G.state == "title" then
     HUD.title(G)
   elseif G.state == "over" or G.state == "win" then
     HUD.ending(G, G.state == "win")
+  elseif G.intro and not G.intro.done then
+    Story.drawIntro(G, HUD.fonts, VW, VH)
   else
     HUD.play(G)
   end
   if G.menu then HUD.menu(G, G.menu, #menuStack) end
+
+  if fade.a > 0 then
+    lg.setColor(0, 0, 0, fade.a)
+    lg.rectangle("fill", 0, 0, VW, VH)
+  end
 end
 
 return Game

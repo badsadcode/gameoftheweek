@@ -1,5 +1,29 @@
 [
   {
+    "day": "Polish day 1 · night",
+    "kind": "oops",
+    "tag": "Oops",
+    "title": "The robot got stuck on the title screen. For ten minutes.",
+    "body": "<p>We added smooth fade-to-black transitions between screens. Very classy. The robot playtester pressed Enter on the title screen, and then... stood there. Forever.</p><p>Turns out it pressed the button and then politely waited for the fade to finish, without ever letting time pass. A perfect metaphor for something, probably. Fixed. The robot then did every favour for every passenger, fetched Pip's toy train from a brute, and won with all eight passengers alive.</p>",
+    "scribble": "patience is a virtue, but not like that"
+  },
+  {
+    "day": "Polish day 1 · night",
+    "kind": "idea",
+    "tag": "Juice",
+    "title": "Making every hit feel like a hit",
+    "body": "<p>The game now does all the little things that make games feel good. The world freezes for a split second when your wrench connects (it's called hit-stop, and once you notice it you can't un-notice it). Numbers pop up when you pick things up. The camera punches in when dynamite hits the Iron Jaw, and the screen goes white when it explodes. Screens fade instead of snapping. You squash when you land, stretch when you jump, leave snowy footprints on roofs, and your breath fogs in the cold.</p><p>Also a real logo, with icy letters, snow on top and little icicles that drip.</p><img class='devlog-shot' src='games/01-frostline/screenshot-title.png' alt='The new Frostline title screen with an icy logo'>",
+    "scribble": "the icicles drip. we checked."
+  },
+  {
+    "day": "Polish day 1 · night",
+    "kind": "idea",
+    "tag": "Story",
+    "title": "The passengers won't stop talking (on purpose)",
+    "body": "<p>Frostline has a story now. A short intro tells you how you got here. Marisol from <b>Haven Control</b> checks in over the radio along the route (and asks whether there's really a cat on board). The passengers chat in speech bubbles, complain when it gets cold, scream when wolves get in, and react when someone is lost.</p><p>Four of them ask you favours: Ivo wants scrap to tune the engine, Gran Olga needs coal for her soup pot, Pip wants his toy train back from a raider, and Doc Amara needs bandage cloth. Every favour has a real reward.</p><p>And the ending changes depending on who made it: each survivor gets their own epilogue, and saving everyone <i>and</i> destroying the Iron Jaw earns a very special title.</p><img class='devlog-shot' src='games/01-frostline/screenshot-ending.png' alt='The ending screen with epilogues for every surviving passenger'>",
+    "scribble": "Mr. Whiskers becomes mayor. Obviously."
+  },
+  {
     "day": "Polish day 1",
     "kind": "win",
     "tag": "Shipped",

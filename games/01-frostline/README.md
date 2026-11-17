@@ -35,13 +35,17 @@ raiders off... and survive whatever waits near the end of the line.
 - **Hazards**: low bridges and tunnels (duck!), car fires, damaged track (brake or derail),
   wolf packs at night, fevers (bring medicine from the caboose), avalanches (outrun them or dig
   out the buried gap), blizzards.
+- **Story**: a short intro, Marisol from Haven Control on the radio, passengers who chat and react,
+  four favours with real rewards (Ivo's engine tuning, Gran Olga's soup pot, Pip's toy train,
+  Doc Amara's bandages), and epilogues that depend on who survived.
 - **The finale**: near Haven, the **Iron Jaw** attacks. Cut its chains with your wrench before
   they drag the train to a stop, and throw dynamite from the cargo car to bring it down.
 - Your best score is saved. Beat it.
 
 ## Tech
 - Engine: [LÖVE 11.5](https://love2d.org) (Lua). All graphics, sound effects and the adaptive
-  soundtrack are procedural: there are no asset files.
+  soundtrack are procedural. The only assets are two free fonts: Permanent Marker (Apache 2.0)
+  and Lato (SIL Open Font License), with their licenses in `src/assets/fonts/`.
 - Settings and high scores are stored in LÖVE's save folder (`settings.txt`).
 - Dev tools: `love src --autotest [--runs=3] [--start=80] [--god] [--shots]` lets a bot play
   full runs; `love src --scenes` screenshots menus and hazards; `love src --loadtime`.

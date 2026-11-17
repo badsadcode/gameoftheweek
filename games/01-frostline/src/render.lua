@@ -48,7 +48,9 @@ function R.person(x, y, o)
   if o.rot and o.rot ~= 0 then
     lg.translate(0, -28 * s); lg.rotate(o.rot); lg.translate(0, 28 * s)
   end
-  lg.scale(f * s, (o.duck and 0.62 or 1) * s)
+  if o.lean and o.lean ~= 0 then lg.rotate(o.lean) end
+  local sq = o.squash or 0
+  lg.scale(f * s * (1 + sq * 0.6), (o.duck and 0.62 or 1) * s * (1 - sq))
 
   local swing = o.moving and math.sin(o.anim * 1.6) * 6 or 0
   local t = o.time or 0
@@ -101,6 +103,13 @@ function R.person(x, y, o)
     ang = 0.2
   else
     ang = 0.5 + math.sin(o.anim * 1.6) * 0.25 * (o.moving and 1 or 0)
+  end
+  if o.attackT and o.attackT > 0 then
+    local k = 1 - o.attackT / 0.2
+    lg.setColor(1, 1, 1, 0.55 * (1 - k))
+    lg.setLineWidth(4)
+    lg.arc("line", "open", 4, -36, 34, -2.0, -2.0 + 2.8 * k)
+    lg.setLineWidth(1)
   end
   lg.push()
   lg.translate(3, -39)
@@ -528,7 +537,12 @@ end
 function R.items(G)
   for _, it in ipairs(G.items) do
     local by = it.y - 8 + math.sin(it.t * 4) * 3
-    if it.kind == "scrap" then
+    if it.kind == "toy" then
+      lg.setColor(0.85, 0.2, 0.2); lg.rectangle("fill", it.x - 12, by - 12, 24, 10, 2, 2)
+      lg.setColor(0.2, 0.25, 0.6); lg.rectangle("fill", it.x + 2, by - 20, 8, 8, 1, 1)
+      lg.setColor(0.15, 0.15, 0.15); lg.circle("fill", it.x - 6, by - 1, 3); lg.circle("fill", it.x + 6, by - 1, 3)
+      lg.setColor(1, 0.9, 0.3, 0.5 + 0.5 * math.sin(it.t * 6)); lg.circle("line", it.x, by - 8, 18)
+    elseif it.kind == "scrap" then
       lg.push(); lg.translate(it.x, by - 2); lg.rotate(it.t * 1.5)
       lg.setColor(0.62, 0.64, 0.7)
       for k = 0, 5 do lg.rectangle("fill", -2.5, -10, 5, 6, 1, 1); lg.rotate(math.pi / 3) end

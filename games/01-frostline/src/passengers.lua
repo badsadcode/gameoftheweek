@@ -69,6 +69,7 @@ function Passengers.lose(G, p, fate)
   local msg = string.format(VERBS[fate] or "%s is gone.", p.name)
   G.toast(msg .. " " .. p.def.lost, { 1, 0.55, 0.45 }, 6)
   Audio.play("lose", 0.25, 1.5)
+  if G.onPassengerLost then G.onPassengerLost(p) end
 end
 
 -- convenience: lose a random passenger

@@ -129,6 +129,11 @@ function Raiders.kill(G, r, dir)
   if r.kind ~= "wolf" and (r.loot > 0 or love.math.random() < 0.45) then
     G.items[#G.items + 1] = { kind = "coal", x = r.x, y = y, amount = r.loot > 0 and r.loot + 1 or 2, t = 0 }
   end
+  if r.kind == "brute" and G.toyWanted and not G.hasToy then
+    G.toyWanted = false
+    G.items[#G.items + 1] = { kind = "toy", x = r.x - 18 * dir, y = y, amount = 1, t = 0 }
+  end
+  if G.onRaiderKilled then G.onRaiderKilled(r) end
   local scrap = (SCRAP[r.kind] or 1) + (Passengers.has(G, "whiskers") and 1 or 0)
   G.items[#G.items + 1] = { kind = "scrap", x = r.x + 18 * dir, y = y, amount = scrap, t = 0.5 }
 end

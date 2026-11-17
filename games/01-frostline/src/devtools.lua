@@ -17,7 +17,9 @@ local results = {}
 local startKm, god = nil, false
 
 function Dev.start(g)
+  io.stdout:setvbuf("no")
   Game = g
+  Game.skipIntro = true
   love.keyboard.isDown = function(...)
     for i = 1, select("#", ...) do if held[(select(i, ...))] then return true end end
     return false
@@ -157,6 +159,16 @@ local function bot(G)
       return
     end
   end
+  -- passenger favours (listen, then deliver when possible)
+  do
+    local St = require("story")
+    local rq, st, rp = St.activeRequest(G)
+    if rq and rp and rp.alive and (st == "asking" or (rq.can(G) and (rq.id ~= "olga" or P.carrying == "coal"))) then
+      local sx = T.cars[2].x + require("render").SEATS[rp.seat]
+      if goTo(P, sx, 8) then interact() end
+      return
+    end
+  end
   -- brake for depots and damaged track
   local wantBrake = ((G.depot ~= nil) and G.coal < G.maxCoal - 5) or (G.track ~= nil and not G.track.passed)
   if G.avalanche then wantBrake = false end
@@ -188,7 +200,7 @@ end
 
 function Dev.update(dt)
   local G = Game.state()
-  if G.state == "title" then press("return"); return end
+  if G.state == "title" then Game.newRun("play"); return end
   local step = 1 / 60
   for _ = 1, SUB do
     G = Game.state()
@@ -248,12 +260,27 @@ local function setupScenes()
         G.boss = { x = 1350, targetX = 1350, hp = 4, state = "fight", t = 0, hookT = 1.2, deployT = 99, flash = 0, dieT = 0, aim = -0.6 }
         G.hooks = { { x = 760, hp = 2 } }
       end },
+    { "intro", function() local G = play(0); G.intro = require("story").newIntro(); G.intro.t = 9.5 end },
+    { "chatter", function()
+        local St = require("story")
+        local G = play(21); G.player.x = 720; G.player.facing = -1
+        G.requests.ivo = "asking"
+        G.radioIdx = 3; G.nextHazardKm = 999; G.nextOverheadKm = 999
+        St.bark(G, "olga", "Eat something. You look like a broom.", true)
+        G.radio = { text = "Marisol here. Coal depot coming up. Slow down or they can't load you. Trust me, I've watched trains try.", t = 7 }
+      end },
+    { "win", function()
+        local G = play(99.95); G.stats.boss = true; G.stats.kills = 31
+        require("passengers").find(G, "bruno").alive = false; require("passengers").find(G, "bruno").fate = "froze"; G.passengers = 7
+      end },
+    { "lose", function() local G = play(41); G.player.health = 0; G.player.warmth = 0 end },
     { "passengers", function() local G = play(20); G.player.x = 690; G.player.facing = -1; G.player.carrying = "coal" end },
   }
 end
 
 function Dev.startScenes(g)
   Game = g
+  Game.skipIntro = true
   love.keyboard.isDown = function() return false end
   setupScenes()
 end
@@ -272,12 +299,12 @@ function Dev.updateScenes(dt)
     sceneIdx = sceneIdx + 1
     if sceneIdx > #scenes then love.event.quit(); return end
     scenes[sceneIdx][2]()
-    local slow = { wolves = 3.5, track = 3.5, boss = 2.5 }
+    local slow = { wolves = 3.5, track = 3.5, boss = 2.5, win = 9, lose = 3, chatter = 1 }
     sceneT = slow[scenes[sceneIdx][1]] or 1.5
   end
   Game.update(1 / 60)
   local name = scenes[sceneIdx] and scenes[sceneIdx][1]
-  if name == "boss" or name == "passengers" then
+  if name == "boss" or name == "passengers" or name == "chatter" then
     local G = Game.state(); G.toasts = {}; G.overheads = {}
   end
 end

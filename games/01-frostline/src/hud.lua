@@ -8,19 +8,91 @@ local Input = require("input")
 local Settings = require("settings")
 local Passengers = require("passengers")
 local Upgrades = require("upgrades")
+local Story = require("story")
 local lg = love.graphics
 
 local HUD = {}
 local F = {}
 local VW, VH = 1280, 720
 
+-- Permanent Marker (titles) + Lato (UI), bundled in assets/fonts; falls back to LÖVE's default font
+local function font(file, size)
+  local ok, f = pcall(lg.newFont, "assets/fonts/" .. file, size)
+  if ok then return f end
+  return lg.newFont(size)
+end
+
+local logoShader
 function HUD.load()
-  F.huge = lg.newFont(78)
-  F.big = lg.newFont(40)
-  F.med = lg.newFont(22)
-  F.small = lg.newFont(16)
-  F.tiny = lg.newFont(13)
+  F.logo = font("PermanentMarker-Regular.ttf", 112)
+  F.huge = font("PermanentMarker-Regular.ttf", 66)
+  F.marker = font("PermanentMarker-Regular.ttf", 26)
+  F.big = font("Lato-Bold.ttf", 38)
+  F.med = font("Lato-Bold.ttf", 22)
+  F.small = font("Lato-Regular.ttf", 17)
+  F.tiny = font("Lato-Regular.ttf", 14)
+  F.float = font("Lato-Bold.ttf", 18)
   HUD.fonts = F
+  -- vertical ice gradient for the logo text
+  local ok, sh = pcall(lg.newShader, [[
+    extern number top;
+    extern number bottom;
+    vec4 effect(vec4 color, Image tex, vec2 tc, vec2 sc) {
+      float a = Texel(tex, tc).a;
+      float k = clamp((sc.y - top) / (bottom - top), 0.0, 1.0);
+      vec3 c = mix(vec3(0.97, 0.99, 1.0), vec3(0.38, 0.66, 0.95), k);
+      c = mix(c, vec3(0.75, 0.9, 1.0), smoothstep(0.55, 0.6, k) * (1.0 - smoothstep(0.6, 0.66, k)) * 0.7);
+      return vec4(c, a * color.a);
+    }
+  ]])
+  if ok then logoShader = sh end
+end
+
+-- the FROSTLINE logo: dark outline, icy gradient, snow caps and dripping icicles
+function HUD.logo(cx, y, t)
+  local text = "FROSTLINE"
+  local f = F.logo
+  lg.setFont(f)
+  local w = f:getWidth(text)
+  local x = cx - w / 2
+  lg.setColor(0.02, 0.04, 0.12, 0.9)
+  for dx = -4, 4, 2 do
+    for dy = -4, 6, 2 do lg.print(text, x + dx, y + dy) end
+  end
+  if logoShader then
+    local _, top = lg.transformPoint(0, y + f:getHeight() * 0.18)
+    local _, bottom = lg.transformPoint(0, y + f:getHeight() * 0.9)
+    logoShader:send("top", top)
+    logoShader:send("bottom", bottom)
+    lg.setShader(logoShader)
+    lg.setColor(1, 1, 1)
+    lg.print(text, x, y)
+    lg.setShader()
+  else
+    lg.setColor(0.85, 0.95, 1)
+    lg.print(text, x, y)
+  end
+  -- snow caps on each letter
+  local capY = y + f:getHeight() * 0.3
+  for i = 1, #text do
+    local lx = x + f:getWidth(text:sub(1, i - 1))
+    local lw = f:getWidth(text:sub(i, i))
+    lg.setColor(1, 1, 1, 0.95)
+    lg.ellipse("fill", lx + lw * 0.5, capY + math.sin(i * 1.7) * 3, lw * 0.36, 7)
+  end
+  -- icicles under the logo
+  local baseY = y + f:getHeight() * 0.86
+  for i = 0, 22 do
+    local ix = x + 20 + i * (w - 40) / 22
+    local len = 7 + ((i * 37) % 15)
+    lg.setColor(0.8, 0.92, 1, 0.85)
+    lg.polygon("fill", ix - 4, baseY, ix + 4, baseY, ix, baseY + len)
+    local drip = ((t * 0.6 + i * 0.37) % 1)
+    if i % 4 == 1 then
+      lg.setColor(0.85, 0.95, 1, 1 - drip)
+      lg.circle("fill", ix, baseY + len + drip * 40, 2)
+    end
+  end
 end
 
 local function panel(x, y, w, h, a)
@@ -243,6 +315,20 @@ function HUD.play(G)
     wy = wy + 28
   end
 
+  -- radio (bottom left) and current favour
+  Story.drawRadio(G, F, 14, VH - 14, 300)
+  local rq, st, rp = Story.activeRequest(G)
+  if rq and rp then
+    local text = st == "asking" and (rp.name .. " wants a favour (passenger car)") or (rp.name .. ": bring " .. rq.need)
+    lg.setFont(F.tiny)
+    local w = F.tiny:getWidth(text) + 34
+    panel(14, 156, w, 26)
+    lg.setColor(1, 0.85, 0.3)
+    lg.print("!", 26, 160)
+    lg.setColor(1, 0.92, 0.75)
+    lg.print(text, 40, 161)
+  end
+
   -- toasts
   local ty = math.max(214, wy + 8)
   for i = #G.toasts, math.max(1, #G.toasts - 2), -1 do
@@ -315,11 +401,12 @@ local FATES = {
   fever = "lost to fever", derail = "lost in a derailment", uncoupled = "left behind",
 }
 
-local function roster(G, x, y, w, showPerks)
+local function roster(G, x, y, w, showPerks, epilogue)
+  if epilogue then showPerks = true end
   panel(x, y, w, 46 + #G.passengerList * (showPerks and 38 or 24))
-  lg.setFont(F.med)
+  lg.setFont(F.marker)
   lg.setColor(1, 0.75, 0.4)
-  lg.print("Passengers", x + 16, y + 10)
+  lg.print("Passengers", x + 16, y + 6)
   local t = love.timer.getTime()
   for i, p in ipairs(G.passengerList) do
     local ry = y + 44 + (i - 1) * (showPerks and 38 or 24)
@@ -333,7 +420,12 @@ local function roster(G, x, y, w, showPerks)
     lg.printf(status, x, ry + 2, w - 16, "right")
     if showPerks then
       lg.setColor(p.alive and { 0.6, 0.66, 0.78 } or { 0.45, 0.45, 0.5 })
-      lg.print(p.def.perk, x + 44, ry + 18)
+      local line = p.def.perk
+      if epilogue then
+        line = p.alive and Story.epilogueLine(p) or ""
+        lg.setColor(0.95, 0.85, 0.6)
+      end
+      lg.print(line, x + 44, ry + 18)
     end
   end
 end
@@ -344,9 +436,9 @@ local function upgradesPanel(G, x, y, w)
     if Upgrades.has(G, u.id) then list[#list + 1] = u.name .. (u.repeatable and (" x" .. G.upgrades[u.id]) or "") end
   end
   panel(x, y, w, 50 + math.max(1, #list) * 22)
-  lg.setFont(F.med)
+  lg.setFont(F.marker)
   lg.setColor(1, 0.75, 0.4)
-  lg.print("Upgrades", x + 16, y + 10)
+  lg.print("Upgrades", x + 16, y + 6)
   lg.setFont(F.small)
   lg.setColor(0.8, 0.85, 0.95)
   if #list == 0 then lg.print("None yet. Spend scrap at depots!", x + 16, y + 44) end
@@ -364,9 +456,9 @@ local function controls(x, y, w)
     { Input.label("pause"), "Pause & passengers" },
   }
   panel(x, y, w, 60 + #rows * 32)
-  lg.setFont(F.med)
+  lg.setFont(F.marker)
   lg.setColor(1, 0.75, 0.4)
-  lg.print("Controls", x + 18, y + 12)
+  lg.print("Controls", x + 18, y + 8)
   lg.setFont(F.small)
   for i, c in ipairs(rows) do
     local ry = y + 18 + i * 32
@@ -383,18 +475,18 @@ end
 function HUD.title(G)
   lg.setColor(0, 0, 0.03, 0.45)
   lg.rectangle("fill", 0, 0, VW, VH)
-  shadowText("FROSTLINE", 0, 40, VW, "center", { 0.85, 0.95, 1 }, F.huge)
-  shadowText("Last Train to Haven", 0, 128, VW, "center", { 1, 0.7, 0.4 }, F.med)
+  HUD.logo(VW / 2, -8, love.timer.getTime())
+  shadowText("Last Train to Haven", 0, 160, VW, "center", { 1, 0.7, 0.4 }, F.med)
 
-  panel(110, 180, 430, 330)
+  panel(110, 202, 430, 300)
   lg.setFont(F.small)
   lg.setColor(0.9, 0.93, 1)
   lg.printf("You are the last crew on the last train. 100 km of frozen wasteland lie between eight passengers and Haven.\n\n"
     .. "Shovel coal into the FURNACE for speed, and into the STOVE so nobody freezes.\n\n"
     .. "Brake at DEPOTS to reload and spend scrap on upgrades.\n\n"
     .. "Fight off raiders, wolves, fires and avalanches... and whatever waits near the end of the line.",
-    130, 196, 390, "left")
-  controls(740, 180, 430)
+    130, 218, 390, "left")
+  controls(740, 202, 430)
 
   local d = Settings.data
   lg.setFont(F.small)
@@ -437,19 +529,19 @@ function HUD.ending(G, won)
   lg.setColor(0, 0, 0.03, 0.7 * a)
   lg.rectangle("fill", 0, 0, VW, VH)
   if G.endT < wait + 0.3 then return end
-  local title = won and "YOU REACHED HAVEN" or "THE LINE GOES COLD"
-  shadowText(title, 0, 34, VW, "center", won and { 1, 0.85, 0.5 } or { 0.7, 0.85, 1 }, F.huge)
+  local title, tcol = Story.endingTitle(G, won)
+  shadowText(title, 0, 30, VW, "center", tcol, F.huge)
   shadowText(G.overReason or "", 0, 124, VW, "center", { 0.9, 0.9, 0.95 }, F.med)
 
-  roster(G, 90, 175, 400, false)
+  roster(G, 60, 175, 450, false, won)
 
   -- score breakdown
   local x, y, w = 540, 175, 400
   local s = G.stats
   panel(x, y, w, 380)
-  lg.setFont(F.med)
+  lg.setFont(F.marker)
   lg.setColor(1, 0.75, 0.4)
-  lg.print("The run", x + 16, y + 10)
+  lg.print("The run", x + 16, y + 6)
   local lines = {
     { "Distance", string.format("%.1f km", G.dist) },
     { "Raiders thrown off", s.kills .. (s.knocked > 0 and ("  (" .. s.knocked .. " by bridges)") or "") },
