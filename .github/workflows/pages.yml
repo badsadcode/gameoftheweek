@@ -1,9 +1,10 @@
-# Builds every game (Windows zip + experimental web build) and deploys the GitHub Pages site.
+# Builds every game in games/*/ and deploys the GitHub Pages site.
+# A game folder needs game.json. engine "love" -> tools/build-love.sh; anything else -> its own build.sh <out-dir>.
 name: Build and deploy
 
 on:
   push:
-    branches: [main, ccr-f98e9e8f-6xkdjc]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -24,39 +25,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Download LÖVE for Windows
         run: |
           curl -sSL -o love.zip "https://github.com/love2d/love/releases/download/${LOVE_VERSION}/love-${LOVE_VERSION}-win64.zip"
           unzip -q love.zip
 
-      - name: Build week 01 - Frostline (Windows)
+      - name: Build every game
+        env:
+          WEB: "1"
         run: |
-          chmod +x week01-frostline/build.sh
-          week01-frostline/build.sh "love-${LOVE_VERSION}-win64" dist/week01
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Build week 01 - Frostline (web, experimental)
-        continue-on-error: true
-        run: npx --yes love.js@11.4.1 -c -t "Frostline" dist/week01/frostline.love dist/week01/play
+          export LOVE_WIN="$PWD/love-${LOVE_VERSION}-win64"
+          for dir in games/*/; do
+            slug="$(basename "$dir")"
+            engine="$(jq -r '.engine // empty' "$dir/game.json")"
+            echo "::group::$slug ($engine)"
+            if [ "$engine" = "love" ]; then
+              bash tools/build-love.sh "$dir" "dist/$slug"
+            elif [ -f "$dir/build.sh" ]; then
+              bash "$dir/build.sh" "dist/$slug"
+            else
+              echo "no build for $slug"
+            fi
+            echo "::endgroup::"
+          done
 
       - name: Assemble site
-        run: |
-          mkdir -p _site/week01
-          cp -r site/. _site/
-          cp week01-frostline/screenshot.png _site/week01/
-          cp dist/week01/Frostline-win64.zip dist/week01/frostline.love _site/week01/
-          if [ -f dist/week01/play/index.html ]; then cp -r dist/week01/play _site/week01/play; fi
-          touch _site/.nojekyll
-          ls -R _site | head -50
-
-      - name: Keep the Windows build as a workflow artifact too
-        uses: actions/upload-artifact@v4
-        with:
-          name: Frostline-win64
-          path: dist/week01/Frostline/
+        run: bash tools/assemble-site.sh dist _site && ls -R _site | head -60
 
       - uses: actions/upload-pages-artifact@v3
         with:

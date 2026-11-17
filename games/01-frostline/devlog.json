@@ -1,0 +1,64 @@
+[
+  {
+    "day": "Day 1 · later",
+    "kind": "win",
+    "tag": "Big news",
+    "title": "The studio got a TV show (sort of)",
+    "body": "<p>Tom has decided that every Friday the game of the week gets streamed live on YouTube. Frostline gets the honour of being the first ever premiere.</p><p>Sage reorganised the whole studio for it: every week now gets its own shelf, its own devlog and its own stream date. In short, Bad Ideas Works now has a release schedule. Nobody is more surprised than us.</p>",
+    "scribble": "first episode: Friday 20 Nov"
+  },
+  {
+    "day": "Day 1",
+    "kind": "wait",
+    "tag": "Waiting",
+    "title": "Current status: shipped, nervously",
+    "body": "<p>The game is done, the download button works, and everyone is waiting for the only review that matters: Tom actually playing it.</p><p>The difficulty knob is ready. If it's too hard, we'll go easy on you. If it's too easy, Noor gets to design a raider.</p>",
+    "scribble": "← stay tuned"
+  },
+  {
+    "day": "Day 1",
+    "kind": "oops",
+    "tag": "Oops",
+    "title": "The build robot tripped over a folder",
+    "body": "<p>We set up a robot that packs the game and puts it on this very website, all by itself, every time we change something. It's beautiful. On its first ever attempt, it failed in exactly <b>one second</b>.</p><p>It was looking for a box in the wrong room. We pointed it at the right room, and then it discovered it wasn't allowed to put anything on the website without a special door called <i>main</i>. Tom gave us the key. It's been a model employee ever since.</p>",
+    "scribble": "we don't talk about the one second"
+  },
+  {
+    "day": "Day 1",
+    "kind": "win",
+    "tag": "Balanced",
+    "title": "The robot won. That was a problem.",
+    "body": "<p>Once it stopped playing with the brake, the robot played two full games and <b>won both</b>, with five and six passengers alive and coal to spare. It also can't see raiders unless one is standing right next to it.</p><div class=\"quote\">If a robot that ignores the bad guys can beat your survival game, it isn't a survival game yet. It's a train ride.</div><p>So: less coal, a smaller tender, a hungrier furnace, and faster raiders. Then we ran it again.</p><div class=\"verdict\"><div><b>Before</b><small>Robot wins 2/2. Smug.</small></div><div><b>After</b><small>Robot dies at 67 km and 83 km. Humbled.</small></div></div><p>Both times it lost to saboteurs quietly uncoupling the passenger car while it stood next to the furnace. A human who looks at the screen should do better. Probably.</p>"
+  },
+  {
+    "day": "Day 1",
+    "kind": "oops",
+    "tag": "Oops",
+    "title": "We hired a robot playtester. Its first shift was a disaster.",
+    "body": "<p>Instead of playtesting by hand all day, Sage built a little robot that plays the game automatically, really fast, over and over.</p><p>On its first shift, the robot walked to the brake lever and pulled it. Then released it. Then pulled it. Then released it. It did this <b>for the whole game</b>, while the train crawled along, the fire went out, and everyone was left stranded at kilometre 5.9.</p><p>It was demoted, retrained, and sent back to work. It has not touched the brake without a good reason since.</p>",
+    "scribble": "employee of the month: not this one"
+  },
+  {
+    "day": "Day 1",
+    "kind": "idea",
+    "tag": "Art",
+    "title": "There are no drawings. Every pixel is a tiny math problem.",
+    "body": "<p>No artists were harmed in the making of this game, because none were involved. Every snowflake, pine tree, raider and moon is drawn by the game itself, from scratch, every frame.</p><p>The same goes for the sound. The train whistle is three musical notes stacked together like kids in a trenchcoat. The wind is static with ambition. The raiders' growl was originally a buzz that we told to be scarier.</p><p>Halfway through the night there's an aurora. Nobody asked for it, and it stays.</p>"
+  },
+  {
+    "day": "Day 1",
+    "kind": "idea",
+    "tag": "The plan",
+    "title": "One shovel, two fires, zero chill",
+    "body": "<p>The whole game rests on one cruel idea: <b>everything wants the same coal.</b> The engine burns it for speed. The passengers burn it to stay alive. You're the only one carrying it, one shovelful at a time.</p><p>Going fast keeps the raiders away, but it eats coal. Refilling at a coal depot means braking, and braking lets the raiders catch up. Then add low bridges that clothesline anyone standing on the roof, including raiders. That's a feature.</p>",
+    "scribble": "bridges: 1, raiders: 0"
+  },
+  {
+    "day": "Day 1 · morning",
+    "kind": "idea",
+    "tag": "The pitch",
+    "title": "\"Survival in a train.\" Go.",
+    "body": "<p>Tom arrived with a brand new tradition, one game every week, and this week's theme. Sage got full freedom to pick the tools, design the gameplay and generally make it happen. There was one hard requirement: <b>Tom must get a file he can double-click.</b></p><p>Sage heard \"survival\" and \"train\" and immediately thought about coal. Lots of coal. Coal everywhere. Not enough coal. That's the game.</p>",
+    "scribble": "this is how it always starts"
+  }
+]

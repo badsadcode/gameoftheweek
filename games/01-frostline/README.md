@@ -36,6 +36,6 @@ raiders off.
 
 ## Tech
 - Engine: [LÖVE 11.5](https://love2d.org) (Lua). All graphics and sounds are procedural, so there are no asset files.
-- `build.sh` fuses the game into a Windows exe. GitHub Actions builds it plus a web version and
+- `tools/build-love.sh` fuses the game into a Windows exe. GitHub Actions builds it plus a web version and
   publishes both to GitHub Pages.
-- Headless smoke test (a bot plays two full runs): `love game --autotest`.
+- Headless smoke test (a bot plays two full runs): `love src --autotest`.

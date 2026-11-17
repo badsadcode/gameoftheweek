@@ -1,0 +1,26 @@
+{
+  "slug": "01-frostline",
+  "week": 1,
+  "title": "Frostline: Last Train to Haven",
+  "theme": "Survival on a train",
+  "tagline": "One shovel, two fires, eight passengers and 100 km of snow.",
+  "pitch": "You're the only crew left on the last train out. The engine wants coal so it can outrun the raiders, and the passengers want coal so they don't freeze. You can't make both happy. Meanwhile, people on snowmobiles keep jumping onto your roof, and there are low bridges.",
+  "engine": "love",
+  "exe_name": "Frostline",
+  "web": true,
+  "accent": "#8fd3ff",
+  "emoji": "❄️",
+  "stream_date": "2026-11-20",
+  "youtube_video_id": "",
+  "status": "building",
+  "bad_idea_rating": 4,
+  "bad_idea_note": "one bulb short of us needing a lawyer",
+  "progress": [
+    { "label": "Bad idea pitched", "done": true },
+    { "label": "Made playable", "done": true },
+    { "label": "Robot playtested", "done": true },
+    { "label": "Tom playtest", "done": false },
+    { "label": "Friday stream", "done": false }
+  ],
+  "controls": "Unzip and run Frostline.exe. A/D move, W/S climb ladders, Space jump, E to do stuff, J to bonk raiders, and S on a roof to duck. Duck. Seriously."
+}
