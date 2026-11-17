@@ -500,7 +500,7 @@ function HUD.title(G)
   lg.setColor(0.75, 0.8, 0.9)
   local best = d.runs > 0 and string.format("Best score: %d   ·   Best distance: %.1f km   ·   Wins: %d", d.best_score, d.best_dist, d.wins) or "No runs yet. Good luck out there."
   lg.printf(best, 0, 518, VW, "center")
-  shadowText("Bad Ideas Works  ·  Game of the Week #1", 0, 690, VW, "center", { 0.6, 0.7, 0.85 }, F.tiny)
+  shadowText("Bad Ideas Works  ·  Games of the Week  ·  Week 1", 0, 690, VW, "center", { 0.6, 0.7, 0.85 }, F.tiny)
 end
 
 function HUD.menu(G, menu, depth)

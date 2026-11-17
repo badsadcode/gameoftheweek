@@ -1,5 +1,5 @@
 -- Frostline: Last Train to Haven
--- Bad Ideas Works · Game of the Week #01
+-- Bad Ideas Works · Games of the Week · Week 1
 
 function love.conf(t)
   t.identity = "frostline"

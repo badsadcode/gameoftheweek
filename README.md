@@ -1,6 +1,6 @@
-# Game of the Week · Bad Ideas Works
+# Games of the Week · Bad Ideas Works
 
-A new small game every week, premiered live every Friday on YouTube.
+New small games every week (sometimes one, sometimes more), premiered live every Friday on YouTube.
 **No fixed engine, no fixed genre:** every week uses whatever fits that week's bad idea.
 *Where bad ideas receive suspiciously serious engineering.*
 
@@ -33,8 +33,10 @@ tools/
 
 ## The weekly routine
 
-1. **Theme drops:** create `games/NN-name/` with `game.json` (copy week 1's), `devlog.json` and `src/`.
-   The newest week automatically becomes "This week" on the site, and the previous one moves to the archive.
+1. **Ideas drop:** create `games/NN-name/` for each game (NN = game number, not week) with `game.json`
+   (copy an existing one), `devlog.json` and `src/`. Several games can share the same `week` and
+   `stream_date`. The site spotlights every game premiering on the next Friday; everything else goes
+   on the archive shelf (games for later weeks show as "In the workshop").
 2. **Build week:** write devlog entries as things happen (or go wrong).
 3. **Friday stream:** after streaming, put the YouTube video id in `game.json` (`youtube_video_id`)
    and tick the progress steps. The replay is embedded on the game's page.

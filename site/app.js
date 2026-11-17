@@ -1,6 +1,7 @@
 // Bad Ideas Works · site renderer
 // Reads config.json + games.json (built from every games/*/game.json) and each game's devlog.json.
 // index.html -> show homepage, game.html?g=<slug> -> one game's page with its full devlog.
+// A week can have several games (they share "week" in game.json); all premiere that Friday.
 // To add a week you never touch this file: add a games/<NN-name>/ folder with game.json + devlog.json.
 
 const $ = (sel) => document.querySelector(sel);
@@ -126,49 +127,81 @@ function onAir(game, config) {
 }
 
 // ---------------------------------------------------------------- pages
+// Which games are "this week"? The ones with the nearest upcoming (or today's) Friday stream that
+// hasn't happened yet. Several games can share a week. If nothing is upcoming, the newest week.
+function splitWeeks(games) {
+  const upcoming = games.filter((g) => !g.youtube_video_id && (daysUntil(g.stream_date) ?? 0) >= 0);
+  let spotlightWeek
+  if (upcoming.length) {
+    upcoming.sort((a, b) => (daysUntil(a.stream_date) ?? 999) - (daysUntil(b.stream_date) ?? 999) || a.week - b.week);
+    spotlightWeek = upcoming[0].week;
+  } else {
+    spotlightWeek = Math.max(...games.map((g) => g.week));
+  }
+  const spotlight = games.filter((g) => g.week === spotlightWeek);
+  const others = games.filter((g) => g.week !== spotlightWeek).sort((a, b) => b.week - a.week || a.slug.localeCompare(b.slug));
+  return { spotlight, others, spotlightWeek };
+}
+
+function onAirWeek(week, games, config) {
+  if (games.length === 1) return onAir(games[0], config);
+  // several games premiering together: reuse the single-game banner, then list the titles
+  const html = onAir(games[0], config);
+  const titles = games.map((g) => "<b>" + esc(g.title.split(":")[0]) + "</b>").join(" + ");
+  return html.replace(/<div class="onair-game">[\s\S]*?<\/div>/, `<div class="onair-game">Week ${week}: ${titles}</div>`);
+}
+
 async function renderHome() {
   const [config, games] = await Promise.all([getJSON("config.json", {}), getJSON("games.json", [])]);
   if (!games.length) { $("#spotlight").innerHTML = "<p>No games yet. The first bad idea is loading…</p>"; return; }
-  const current = games[0];
-  const past = games.slice(1);
-  const devlog = await getJSON(`games/${current.slug}/devlog.json`, []);
+  const { spotlight, others, spotlightWeek } = splitWeeks(games);
+  const logs = await Promise.all(games.map((g) => getJSON(`games/${g.slug}/devlog.json`, [])));
+  const logOf = Object.fromEntries(games.map((g, i) => [g.slug, logs[i]]));
 
   const streamed = games.filter((g) => g.youtube_video_id).length;
   const engines = new Set(games.map((g) => g.engine_label || g.engine).filter(Boolean)).size;
-  let entries = devlog.length;
-  if (past.length) {
-    const others = await Promise.all(past.map((g) => getJSON(`games/${g.slug}/devlog.json`, [])));
-    entries += others.reduce((n, l) => n + l.length, 0);
-  }
+  const weeks = new Set(games.map((g) => g.week)).size;
+  const entries = logs.reduce((n, l) => n + l.length, 0);
   $("#stats").innerHTML = `
     <div class="stat"><b>${games.length}</b><span>game${games.length === 1 ? "" : "s"} made</span></div>
-    <div class="stat"><b>${streamed}</b><span>Friday stream${streamed === 1 ? "" : "s"} so far</span></div>
+    <div class="stat"><b>${weeks}</b><span>week${weeks === 1 ? "" : "s"} of bad ideas</span></div>
+    <div class="stat"><b>${streamed}</b><span>Friday premiere${streamed === 1 ? "" : "s"} so far</span></div>
     <div class="stat"><b>${engines}</b><span>engine${engines === 1 ? "" : "s"} used (no favourites)</span></div>
-    <div class="stat"><b>${entries}</b><span>devlog confessions</span></div>
-    <div class="stat"><b>100%</b><span>of bad ideas approved (worrying)</span></div>`;
+    <div class="stat"><b>${entries}</b><span>devlog confessions</span></div>`;
 
-  $("#onair").innerHTML = onAir(current, config);
-  $("#spotlight").innerHTML = gameCard(current, { ribbon: `THIS WEEK · WEEK ${current.week}` });
-  $("#latest").innerHTML = devlog.slice(0, 3).map(entryHTML).join("") +
-    (devlog.length > 3 ? `<p class="more"><a class="btn ghost" href="game.html?g=${esc(current.slug)}">Read all ${devlog.length} entries →</a></p>` : "");
-  $("#latest-title").textContent = `${current.emoji || "📓"} Week ${current.week} · ${current.title.split(":")[0]}`;
+  $("#onair").innerHTML = onAirWeek(spotlightWeek, spotlight, config);
+  $("#this-week-title").textContent = spotlight.length > 1 ? `This Week's Bad Ideas (${spotlight.length})` : "This Week's Bad Idea";
+  $("#spotlight").innerHTML = spotlight.map((g, i) =>
+    gameCard(g, { ribbon: spotlight.length > 1 ? `WEEK ${g.week} · GAME ${i + 1} OF ${spotlight.length}` : `THIS WEEK · WEEK ${g.week}` })
+  ).join('<div style="height:26px"></div>');
 
-  const nextWeek = current.week + 1;
-  $("#archive").innerHTML = past.map((g) => `
+  // latest devlog: the freshest entries across this week's games
+  $("#latest").innerHTML = spotlight.map((g) => {
+    const log = logOf[g.slug];
+    const head = spotlight.length > 1 ? `<h3 class="marker log-week" style="color:${esc(g.accent || "#8fd3ff")}">${esc(g.emoji || "📓")} ${esc(g.title.split(":")[0])}</h3>` : "";
+    return head + log.slice(0, spotlight.length > 1 ? 2 : 3).map(entryHTML).join("") +
+      (log.length > 2 ? `<p class="more"><a class="btn ghost" href="game.html?g=${esc(g.slug)}">Read all ${log.length} entries →</a></p>` : "");
+  }).join("");
+  $("#latest-title").textContent = spotlight.length > 1 ? `Week ${spotlightWeek}` : `${spotlight[0].emoji || "📓"} Week ${spotlightWeek} · ${spotlight[0].title.split(":")[0]}`;
+
+  // archive + whatever comes next, grouped by week
+  const card = (g) => `
     <a class="mini" href="game.html?g=${esc(g.slug)}" style="--game-accent:${esc(g.accent || "#8fd3ff")}">
       <img src="games/${esc(g.slug)}/screenshot.png" alt="" onerror="this.remove()">
       <div class="mini-body">
         <span class="chip day">Week ${g.week}</span>
         <h4 class="marker">${esc(g.title)}</h4>
         <p>${esc(g.theme)}${g.genre ? " · " + esc(g.genre.split("·")[0].trim()) : ""}${g.engine_label ? " · " + esc(g.engine_label) : ""}</p>
-        <span class="mini-status">${g.youtube_video_id ? "📺 Streamed" : "🎮 Playable"}</span>
+        <span class="mini-status">${g.youtube_video_id ? "📺 Streamed" : (g.week > spotlightWeek ? "🔨 In the workshop" : "🎮 Playable")}</span>
       </div>
-    </a>`).join("") + `
+    </a>`;
+  const maxWeek = Math.max(...games.map((g) => g.week));
+  $("#archive").innerHTML = others.map(card).join("") + `
     <div class="mini next">
       <div class="mini-body">
-        <span class="chip day">Week ${nextWeek}</span>
+        <span class="chip day">Week ${maxWeek + 1}</span>
         <h4 class="marker">???</h4>
-        <p>The next bad idea is still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
+        <p>The next bad ideas are still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
       </div>
     </div>`;
 }

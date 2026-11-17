@@ -1,6 +1,6 @@
 # FROSTLINE: Last Train to Haven
 
-*Bad Ideas Works · Game of the Week #1 · Theme: survival on a train*
+*Bad Ideas Works · Games of the Week · Week 1 · Theme: survival on a train*
 
 You are the last crew member on the last train. 100 km of frozen wasteland lie between
 eight passengers and Haven. Keep the fires burning, keep the train moving, keep the

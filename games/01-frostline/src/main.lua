@@ -1,5 +1,5 @@
 -- Frostline: Last Train to Haven
--- Bad Ideas Works · Game of the Week #01
+-- Bad Ideas Works · Games of the Week · Week 1
 --
 -- Map of the code (studio motto #001: keep it understandable):
 --   game.lua       run state, simulation loop, input, draw order
