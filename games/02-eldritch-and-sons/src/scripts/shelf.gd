@@ -53,8 +53,18 @@ func refresh() -> void:
 		var row := i / 4
 		var colm := i % 4
 		var pos := Vector3(-0.66 + colm * 0.44, 0.18 + row * 0.7 + 0.14, 0.02)
-		var it := Vox.box(items_node, pos, Vector3(0.26, 0.28, 0.26), Vox.obj_mat(col, product == "eyes" or product == "jar"), false)
-		it.rotation.y = sin(i * 2.3) * 0.15
+		var model := Products.model(product)
+		if model:
+			# a hand-made model, standing in its slot
+			var holder := Node3D.new()
+			holder.position = pos - Vector3(0, 0.14, 0)
+			holder.rotation.y = sin(i * 2.3) * 0.25
+			items_node.add_child(holder)
+			holder.add_child(model)
+			Products.fit_model(model, Vector3(0.3, 0.42, 0.3))
+		else:
+			var it := Vox.box(items_node, pos, Vector3(0.26, 0.28, 0.26), Vox.obj_mat(col, product == "eyes" or product == "jar"), false)
+			it.rotation.y = sin(i * 2.3) * 0.15
 
 func take_one() -> bool:
 	if count <= 0: return false

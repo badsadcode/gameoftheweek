@@ -36,3 +36,50 @@ static func available(day: int, beyond: bool) -> Array:
 	for id in LIST:
 		if LIST[id]["beyond"] == beyond and LIST[id]["day"] <= day: out.append(id)
 	return out
+
+# --------------------------------------------------------------------------- 3D models
+## Hand-made product models live in res://assets/models/<id>.glb (e.g. Tom's milk bottle).
+## Any size or scale works: fit_model() shrinks them into a shelf slot. No model? A box is used.
+static var _models := {}
+
+static func model(id: String) -> Node3D:
+	if not _models.has(id):
+		var path := "res://assets/models/%s.glb" % id
+		_models[id] = load(path) if ResourceLoader.exists(path) else null
+	var ps: PackedScene = _models[id]
+	if ps == null: return null
+	var n: Node3D = ps.instantiate()
+	_pixelate(n)
+	return n
+
+## pixel-sharp textures, so models match the blocky world
+static func _pixelate(n: Node) -> void:
+	var mi := n as MeshInstance3D
+	if mi and mi.mesh:
+		for i in mi.mesh.get_surface_count():
+			var m: Material = mi.mesh.surface_get_material(i)
+			if m is BaseMaterial3D:
+				var mm: BaseMaterial3D = m.duplicate()
+				mm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+				mi.set_surface_override_material(i, mm)
+	for c in n.get_children(): _pixelate(c)
+
+static func _bounds(n: Node, xf: Transform3D, acc: Array) -> void:
+	var t := xf
+	if n is Node3D: t = xf * (n as Node3D).transform
+	var mi := n as MeshInstance3D
+	if mi and mi.mesh:
+		var box: AABB = t * mi.mesh.get_aabb()
+		acc[0] = box if acc[0] == null else (acc[0] as AABB).merge(box)
+	for c in n.get_children(): _bounds(c, t, acc)
+
+## scale a model uniformly to fit a slot (w x h x d), standing on y = 0, centred
+static func fit_model(n: Node3D, slot: Vector3) -> void:
+	var acc := [null]
+	_bounds(n, Transform3D.IDENTITY, acc)
+	if acc[0] == null: return
+	var b: AABB = acc[0]
+	var k := minf(minf(slot.x / maxf(b.size.x, 0.001), slot.y / maxf(b.size.y, 0.001)), slot.z / maxf(b.size.z, 0.001))
+	n.scale = n.scale * k
+	var c := b.get_center()
+	n.position = Vector3(-c.x * k, -b.position.y * k, -c.z * k)

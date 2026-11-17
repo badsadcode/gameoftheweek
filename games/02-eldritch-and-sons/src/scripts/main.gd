@@ -801,6 +801,13 @@ func _ui_shots() -> void:
 	ui.show_summary(lines, func(): pass)
 	await snap.call("summary")
 	ui.close_panel()
+	# close-up of the milk shelf (hand-made models)
+	player.global_position = Vector3(-3.3, 0, -2.6)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = -0.32
+	minute = 11 * 60
+	_apply_time_of_day()
+	await snap.call("shelf_closeup")
 	sanity = 25.0
 	minute = 21 * 60
 	_apply_time_of_day()
