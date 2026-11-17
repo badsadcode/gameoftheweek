@@ -301,5 +301,6 @@ func _cctv() -> void:
 	screen.material_override = m
 	screen.position = Vector3(-5.75, 1.36, 1.94)
 	screen.rotation.y = PI
+	screen.layers = 4   # the camera must never film its own monitor (feedback loop)
 	add_child(screen)
 	Vox.label(self, "CAM 1", Vector3(-5.75, 1.62, 1.93), 22, Color(0.6, 1, 0.6)).rotation.y = PI
