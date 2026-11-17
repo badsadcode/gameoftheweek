@@ -10,6 +10,9 @@ OUT="${2:-$HERE/dist}"
 NAME="Frostline"
 
 mkdir -p "$OUT"
+# absolute paths, since we cd around below
+LOVE_WIN="$(cd "$LOVE_WIN" && pwd)"
+OUT="$(cd "$OUT" && pwd)"
 rm -rf "$OUT/$NAME" "$OUT/$NAME-win64.zip" "$OUT/frostline.love"
 
 # 1) the .love file (game source zipped, devtools left out)
