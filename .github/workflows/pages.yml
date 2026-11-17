@@ -1,0 +1,73 @@
+# Builds every game (Windows zip + experimental web build) and deploys the GitHub Pages site.
+name: Build and deploy
+
+on:
+  push:
+    branches: [main, ccr-f98e9e8f-6xkdjc]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  LOVE_VERSION: "11.5"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download LÖVE for Windows
+        run: |
+          curl -sSL -o love.zip "https://github.com/love2d/love/releases/download/${LOVE_VERSION}/love-${LOVE_VERSION}-win64.zip"
+          unzip -q love.zip
+
+      - name: Build week 01 - Frostline (Windows)
+        run: |
+          chmod +x week01-frostline/build.sh
+          week01-frostline/build.sh "love-${LOVE_VERSION}-win64" dist/week01
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build week 01 - Frostline (web, experimental)
+        continue-on-error: true
+        run: npx --yes love.js@11.4.1 -c -t "Frostline" dist/week01/frostline.love dist/week01/play
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/week01
+          cp -r site/. _site/
+          cp week01-frostline/screenshot.png _site/week01/
+          cp dist/week01/Frostline-win64.zip dist/week01/frostline.love _site/week01/
+          if [ -f dist/week01/play/index.html ]; then cp -r dist/week01/play _site/week01/play; fi
+          touch _site/.nojekyll
+          ls -R _site | head -50
+
+      - name: Keep the Windows build as a workflow artifact too
+        uses: actions/upload-artifact@v4
+        with:
+          name: Frostline-win64
+          path: dist/week01/Frostline/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
