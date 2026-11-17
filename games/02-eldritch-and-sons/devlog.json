@@ -1,5 +1,13 @@
 [
   {
+    "day": "Day 2 · lunch break",
+    "kind": "win",
+    "tag": "Art",
+    "title": "Tom made forty textures before going to work",
+    "body": "<p>Sage sent Tom a list of textures that would be nice to have. Tom sent back <b>forty</b> of them, plus a loaf of bread modelled in Blender, and then went to work like nothing happened.</p><p>Walls, floors, brick, the street, the roof, the bed, cardboard boxes, every product on the shelves (Tentacle Jerky has tentacles poking out of the bag; the Whispering Jar has a little ghost inside), the shop sign, the catalogue cover, and the faces: four townsfolk, Mrs. Thorne and her slightly-too-wide smile, Mr. Whitlock as a grey statue, the Collector's eyes glowing in the dark of his hood, the Landlord's three purple eyes, and the man the camera can't see, who looks completely, unsettlingly normal.</p><p>Everything code-generated has been quietly replaced. The game now picks up any texture or model with the right filename, so the art can keep arriving in batches.</p><img class='devlog-shot' src='games/02-eldritch-and-sons/screenshot-lineup.png' alt=\"The whole cast lined up with Tom's pixel-art faces\"><img class='devlog-shot' src='games/02-eldritch-and-sons/screenshot-facade.png' alt=\"The shop front with Tom's ELDRITCH & SONS sign\">",
+    "scribble": "the bread is no longer a box"
+  },
+  {
     "day": "Day 1 · night",
     "kind": "win",
     "tag": "Art",

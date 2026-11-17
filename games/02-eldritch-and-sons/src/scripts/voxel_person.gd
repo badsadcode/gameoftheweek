@@ -85,8 +85,38 @@ func build(look: Dictionary) -> void:
 			extras.append(sh)
 	# head
 	head = _pivot(torso, Vector3(0, 0.62, 0))
-	_part(head, Vector3(0, 0.2, 0), Vector3(0.4, 0.4, 0.4), skin, layer)
-	if not weird.has("no_face"):
+	var face_tex: Texture2D = Vox.art(look.get("face", "")) if look.has("face") else null
+	if face_tex:
+		# Tom's face art on the front; the rest of the head borrows its skin and hair colours
+		var img := face_tex.get_image()
+		if img.is_compressed(): img.decompress()
+		var fskin := img.get_pixel(img.get_width() / 2, int(img.get_height() * 0.72))
+		var fhair := img.get_pixel(img.get_width() / 2, 1)
+		_part(head, Vector3(0, 0.2, 0), Vector3(0.4, 0.4, 0.4), fskin, layer)
+		if fhair.a > 0.5 and Vector3(fhair.r - fskin.r, fhair.g - fskin.g, fhair.b - fskin.b).length() > 0.15:
+			_part(head, Vector3(0, 0.39, 0.02), Vector3(0.42, 0.06, 0.42), fhair, layer)
+			_part(head, Vector3(0, 0.24, 0.19), Vector3(0.42, 0.32, 0.05), fhair, layer)
+		var face := MeshInstance3D.new()
+		var q := QuadMesh.new()
+		q.size = Vector2(0.4, 0.4)
+		face.mesh = q
+		var fm := StandardMaterial3D.new()
+		fm.albedo_texture = face_tex
+		fm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		fm.roughness = 1.0
+		if glow_eyes:
+			fm.emission_enabled = true
+			fm.emission_texture = face_tex
+			fm.emission_energy_multiplier = 0.7
+		face.material_override = fm
+		face.position = Vector3(0, 0.2, -0.203)
+		face.rotation.y = PI
+		face.layers = layer
+		head.add_child(face)
+		look.erase("hair")
+	else:
+		_part(head, Vector3(0, 0.2, 0), Vector3(0.4, 0.4, 0.4), skin, layer)
+	if not weird.has("no_face") and face_tex == null:
 		var eye_y := 0.22
 		var eye_xs: Array = [-0.09, 0.09]
 		if weird.has("three_eyes"): eye_xs = [-0.11, 0.0, 0.11]
@@ -183,6 +213,7 @@ static func random_look(rng: RandomNumberGenerator) -> Dictionary:
 		"width": rng.randf_range(0.92, 1.1),
 	}
 	if rng.randf() < 0.75: look["hair"] = hairs[rng.randi() % hairs.size()]
+	look["face"] = "face_townsfolk_%d" % rng.randi_range(1, 4)
 	if rng.randf() < 0.25: look["hat"] = [Color(0.2, 0.18, 0.15), Color(0.35, 0.15, 0.12), Color(0.15, 0.2, 0.3)][rng.randi() % 3]
 	if rng.randf() < 0.3: look["coat"] = [Color(0.35, 0.3, 0.25), Color(0.2, 0.22, 0.28)][rng.randi() % 2]
 	return look

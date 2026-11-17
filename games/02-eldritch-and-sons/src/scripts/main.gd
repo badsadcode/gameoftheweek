@@ -607,7 +607,7 @@ func _specials() -> void:
 	if not flags["whitlock_done"] and minute >= 17 * 60 + 40 and minute < CLOSE_MIN:
 		flags["whitlock_done"] = true
 		var look := { "skin": Color(0.86, 0.86, 0.82), "shirt": Color(0.3, 0.3, 0.33), "pants": Color(0.12, 0.12, 0.14),
-			"coat": Color(0.08, 0.08, 0.1), "hat": Color(0.06, 0.06, 0.07), "height": 1.22, "width": 0.82, "eyes": Color(0.02, 0.02, 0.02) }
+			"coat": Color(0.08, 0.08, 0.1), "hat": Color(0.06, 0.06, 0.07), "height": 1.22, "width": 0.82, "eyes": Color(0.02, 0.02, 0.02), "face": "face_whitlock" }
 		var c := _new_customer(look, "whitlock", World.SPAWNS[0])
 		c.cname = "Mr. Whitlock"
 		c.wants = ["silence"]
@@ -621,6 +621,7 @@ func _specials() -> void:
 		flags["unseen_done"] = true
 		var look := VoxelPerson.random_look(rng)
 		look["layer"] = 2
+		look["face"] = "face_unseen"
 		var c := _new_customer(look, "unseen")
 		c.cname = ["Mr. Hollis", "Mr. Vane", "Mr. Lowe"][rng.randi() % 3]
 		c.wants = ["salt", ["bread", "candles", "tea"][rng.randi() % 3]] if rng.randf() < 0.75 else ["bread", "milk"]
@@ -630,7 +631,7 @@ func _specials() -> void:
 	if not flags["thorne_done"] and minute >= flags["thorne_at"] and is_open:
 		flags["thorne_done"] = true
 		var look := { "skin": Color(0.9, 0.75, 0.65), "shirt": Color(0.55, 0.2, 0.45), "pants": Color(0.25, 0.15, 0.25),
-			"hair": Color(0.85, 0.85, 0.88), "coat": Color(0.4, 0.15, 0.35), "height": 0.9 }
+			"hair": Color(0.85, 0.85, 0.88), "coat": Color(0.4, 0.15, 0.35), "height": 0.9, "face": "face_thorne" }
 		var c := _new_customer(look, "returner")
 		c.cname = "Mrs. Thorne"
 		var opts := Products.available(day, true)
@@ -642,7 +643,7 @@ func _specials() -> void:
 	if flags.has("thorne_owes") and flags.get("thorne_owes_day", -1) == day and not flags.get("thorne_buy_done", false) and minute >= 600 and is_open:
 		flags["thorne_buy_done"] = true
 		var look := { "skin": Color(0.9, 0.75, 0.65), "shirt": Color(0.55, 0.2, 0.45), "pants": Color(0.25, 0.15, 0.25),
-			"hair": Color(0.85, 0.85, 0.88), "coat": Color(0.4, 0.15, 0.35), "height": 0.9 }
+			"hair": Color(0.85, 0.85, 0.88), "coat": Color(0.4, 0.15, 0.35), "height": 0.9, "face": "face_thorne" }
 		var c := _new_customer(look, "thorne_buyer")
 		c.cname = "Mrs. Thorne"
 		c.wants = [flags["thorne_owes"]]
@@ -650,7 +651,7 @@ func _specials() -> void:
 	if not flags["collector_done"] and minute >= flags["collector_at"] and is_open:
 		flags["collector_done"] = true
 		var look := { "skin": Color(0.35, 0.3, 0.45), "shirt": Color(0.2, 0.1, 0.25), "pants": Color(0.15, 0.08, 0.18),
-			"coat": Color(0.25, 0.12, 0.3), "eyes": Color(0.9, 0.8, 0.3), "weird": ["glow_eyes", "extra_arms"], "height": 1.1 }
+			"coat": Color(0.25, 0.12, 0.3), "eyes": Color(0.9, 0.8, 0.3), "weird": ["glow_eyes", "extra_arms"], "height": 1.1, "face": "face_collector" }
 		var c := _new_customer(look, "collector")
 		c.cname = "The Collector"
 		c.wants = ["jar"]
@@ -662,7 +663,7 @@ func _specials() -> void:
 		ui.toast("Three knocks at the front door. It's Friday.", UI.C_PURPLE, 6.0)
 		var look := { "skin": Color(0.05, 0.03, 0.08), "shirt": Color(0.04, 0.03, 0.06), "pants": Color(0.03, 0.02, 0.05),
 			"coat": Color(0.08, 0.05, 0.12), "eyes": Color(0.85, 0.35, 1.0), "weird": ["three_eyes", "glow_eyes", "long_arms", "tentacle_beard"],
-			"height": 1.45, "width": 1.2 }
+			"height": 1.45, "width": 1.2, "face": "face_landlord" }
 		var c := _new_customer(look, "landlord", World.DOOR_OUT + Vector3(0, 0, 1.5))
 		c.cname = "The Landlord"
 		c.flags["direct_queue"] = true
@@ -808,6 +809,39 @@ func _ui_shots() -> void:
 	minute = 11 * 60
 	_apply_time_of_day()
 	await snap.call("shelf_closeup")
+	# character line-up: every face side by side
+	var lineup := [
+		{ "face": "face_townsfolk_1", "shirt": Color(0.55, 0.2, 0.2) }, { "face": "face_townsfolk_2", "shirt": Color(0.2, 0.35, 0.55) },
+		{ "face": "face_townsfolk_3", "shirt": Color(0.3, 0.45, 0.3) }, { "face": "face_townsfolk_4", "shirt": Color(0.6, 0.5, 0.25) },
+		{ "face": "face_unseen", "shirt": Color(0.35, 0.35, 0.4) }, { "face": "face_thorne", "shirt": Color(0.55, 0.2, 0.45), "height": 0.9 },
+		{ "face": "face_whitlock", "shirt": Color(0.3, 0.3, 0.33), "coat": Color(0.08, 0.08, 0.1), "height": 1.15 },
+		{ "face": "face_collector", "shirt": Color(0.2, 0.1, 0.25), "weird": ["glow_eyes"] },
+		{ "face": "face_landlord", "shirt": Color(0.04, 0.03, 0.06), "weird": ["glow_eyes", "tentacle_beard"], "height": 1.2 },
+	]
+	var people: Array = []
+	for i in lineup.size():
+		var vp := VoxelPerson.new()
+		add_child(vp)
+		var lk: Dictionary = lineup[i]
+		lk["pants"] = Color(0.18, 0.18, 0.22)
+		vp.build(lk)
+		vp.position = Vector3(-3.4 + i * 0.85, 0, 0.9)
+		vp.rotation.y = PI
+		people.append(vp)
+	player.global_position = Vector3(0, 0, 4.4)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = -0.12
+	player.cam.fov = 70
+	await snap.call("lineup")
+	for vp in people: vp.queue_free()
+	player.cam.fov = 75
+	# the shop front from across the street (Tom's sign)
+	player.global_position = Vector3(0.5, 0, 13.5)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = 0.1
+	minute = 10 * 60
+	_apply_time_of_day()
+	await snap.call("facade")
 	sanity = 25.0
 	minute = 21 * 60
 	_apply_time_of_day()

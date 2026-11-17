@@ -79,6 +79,12 @@ static func fit_model(n: Node3D, slot: Vector3) -> void:
 	_bounds(n, Transform3D.IDENTITY, acc)
 	if acc[0] == null: return
 	var b: AABB = acc[0]
+	if b.size.z > b.size.x * 1.3:
+		# long things (a loaf of bread) lie sideways along the shelf
+		n.rotation.y += PI / 2
+		acc = [null]
+		_bounds(n, Transform3D.IDENTITY, acc)
+		b = acc[0]
 	var k := minf(minf(slot.x / maxf(b.size.x, 0.001), slot.y / maxf(b.size.y, 0.001)), slot.z / maxf(b.size.z, 0.001))
 	n.scale = n.scale * k
 	var c := b.get_center()

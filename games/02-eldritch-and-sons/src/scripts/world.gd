@@ -93,9 +93,10 @@ func _shop_shell() -> void:
 	Vox.block(self, Vector3(-8, 4, -6), Vector3(16, 0.5, 12), Vox.mat("darkplanks"))
 	Vox.block(self, Vector3(-8.3, 4.5, -6.3), Vector3(16.6, 1.6, 12.6), Vox.mat("roof"))
 	Vox.block(self, Vector3(-8.2, 3.3, 6.0), Vector3(16.4, 0.8, 0.3), Vox.mat("darkplanks"))
-	var name_sign := Vox.label(self, "ELDRITCH & SONS", Vector3(0, 3.72, 6.2), 110, Color(1, 0.85, 0.5))
-	name_sign.pixel_size = 0.006
-	Vox.label(self, "Fine Goods & Curiosities", Vector3(0, 3.42, 6.2), 52, Color(0.85, 0.8, 0.7))
+	if Vox.card(self, "sign", Vector3(0, 3.7, 6.33), 4.6) == null:
+		var name_sign := Vox.label(self, "ELDRITCH & SONS", Vector3(0, 3.72, 6.2), 110, Color(1, 0.85, 0.5))
+		name_sign.pixel_size = 0.006
+	Vox.label(self, "Fine Goods & Curiosities", Vector3(0, 2.95, 6.06), 40, Color(0.85, 0.8, 0.7))
 	# door frame + the OPEN/CLOSED sign you flip from inside
 	Vox.block(self, Vector3(-1.1, 0, 4.85), Vector3(0.12, 2.9, 0.3), Vox.mat("darkplanks"), false)
 	Vox.block(self, Vector3(0.98, 0, 4.85), Vector3(0.12, 2.9, 0.3), Vox.mat("darkplanks"), false)
@@ -107,7 +108,7 @@ func _shop_shell() -> void:
 	# grandpa's letter on the doormat (day 1)
 	letter = Interactable.make(self, Vector3(0.6, 0.03, 4.1), Vector3(0.5, 0.1, 0.4),
 		func(g): return "[E] Read the letter", func(g): g.read_letter())
-	Vox.box(letter, Vector3.ZERO, Vector3(0.32, 0.02, 0.24), Vox.obj_mat(Color(0.95, 0.92, 0.82)), false)
+	Vox.box(letter, Vector3.ZERO, Vector3(0.32, 0.02, 0.24), Vox.art_mat("paper", 3.0) if Vox.art("paper") else Vox.obj_mat(Color(0.95, 0.92, 0.82)), false)
 
 func _storeroom() -> void:
 	var plank := Vox.mat("planks")
@@ -142,7 +143,9 @@ func _counter() -> void:
 	reg.alt_prompt_fn = func(g): return g.register_alt_prompt()
 	reg.alt_use_fn = func(g): g.register_refuse()
 	# the order catalogue
-	Vox.box(self, Vector3(-3.5, 1.14, 2.0), Vector3(0.42, 0.08, 0.32), Vox.obj_mat(Color(0.35, 0.15, 0.4)), false)
+	Vox.box(self, Vector3(-3.5, 1.14, 2.0), Vector3(0.38, 0.08, 0.38), Vox.obj_mat(Color(0.35, 0.15, 0.4)), false)
+	var cover := Vox.card(self, "catalogue", Vector3(-3.5, 1.185, 2.0), 0.36)
+	if cover: cover.rotation = Vector3(-PI / 2, PI, 0)
 	var cat_label := Vox.label(self, "CATALOGUE", Vector3(-3.5, 1.2, 1.83), 30, Color(0.85, 0.7, 1.0))
 	cat_label.pixel_size = 0.002
 	cat_label.rotation.y = PI
@@ -151,7 +154,7 @@ func _counter() -> void:
 	# notice board with the shop rules
 	Vox.box(self, Vector3(-6.93, 2.0, -0.6), Vector3(0.06, 1.0, 1.4), Vox.obj_mat(Color(0.55, 0.4, 0.25)), false)
 	for i in 4:
-		var paper := Vox.box(self, Vector3(-6.89, 1.75 + (i % 2) * 0.45, -1.0 + (i / 2) * 0.7), Vector3(0.02, 0.32, 0.4), Vox.obj_mat(Color(0.92, 0.9, 0.8)), false)
+		var paper := Vox.box(self, Vector3(-6.89, 1.75 + (i % 2) * 0.45, -1.0 + (i / 2) * 0.7), Vector3(0.02, 0.32, 0.4), Vox.art_mat("paper", 2.6) if Vox.art("paper") else Vox.obj_mat(Color(0.92, 0.9, 0.8)), false)
 		paper.rotation.x = sin(i * 1.7) * 0.1
 	var nb := Interactable.make(self, Vector3(-6.85, 2.0, -0.6), Vector3(0.3, 1.1, 1.5),
 		func(g): return "[E] Read the shop rules (or press Tab)", func(g): g.ui.toggle_notebook())

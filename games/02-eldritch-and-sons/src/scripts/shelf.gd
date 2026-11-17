@@ -61,7 +61,11 @@ func refresh() -> void:
 			holder.rotation.y = sin(i * 2.3) * 0.25
 			items_node.add_child(holder)
 			holder.add_child(model)
-			Products.fit_model(model, Vector3(0.3, 0.42, 0.3))
+			Products.fit_model(model, Vector3(0.38, 0.42, 0.3))
+		elif Vox.art(product):
+			# Tom's pixel art as a little standing card, Minecraft-item style
+			var card := Vox.card(items_node, product, pos + Vector3(0, 0.03, 0.04), 0.36)
+			card.rotation.y = sin(i * 2.3) * 0.12
 		else:
 			var it := Vox.box(items_node, pos, Vector3(0.26, 0.28, 0.26), Vox.obj_mat(col, product == "eyes" or product == "jar"), false)
 			it.rotation.y = sin(i * 2.3) * 0.15

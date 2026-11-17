@@ -5,6 +5,47 @@ class_name Vox
 
 static var _tex := {}
 static var _mat := {}
+static var _art := {}
+
+## Tom's hand-made pixel art: res://assets/textures/<name>.png wins over the generated texture.
+static func art(name: String) -> Texture2D:
+	if not _art.has(name):
+		var path := "res://assets/textures/%s.png" % name
+		_art[name] = load(path) if ResourceLoader.exists(path) else null
+	return _art[name]
+
+## a material showing one hand-made texture, once per `tiles_per_m` metres (objects, not walls)
+static func art_mat(name: String, scale := 1.0, emissive := 0.0) -> StandardMaterial3D:
+	var key := "art_%s_%s_%s" % [name, scale, emissive]
+	if not _mat.has(key):
+		var m := StandardMaterial3D.new()
+		m.albedo_texture = tex(name)
+		m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		m.uv1_triplanar = true
+		m.uv1_scale = Vector3.ONE * scale
+		m.roughness = 1.0
+		if emissive > 0.0:
+			m.emission_enabled = true
+			m.emission_texture = m.albedo_texture
+			m.emission_energy_multiplier = emissive
+		_mat[key] = m
+	return _mat[key]
+
+## a flat textured card (product sprites, faces, signs). Faces +Z unless rotated.
+static func card(parent: Node3D, name: String, pos: Vector3, width: float, glow := 0.0) -> Sprite3D:
+	var t := art(name)
+	if t == null: return null
+	var s := Sprite3D.new()
+	s.texture = t
+	s.pixel_size = width / t.get_width()
+	s.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	s.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	s.shaded = glow <= 0.0
+	s.double_sided = false
+	s.position = pos
+	if glow > 0.0: s.modulate = Color(1, 1, 1) * (1.0 + glow)
+	parent.add_child(s)
+	return s
 
 # --------------------------------------------------------------------------- textures
 static func _noise_img(base: Color, seed_: int, amount := 0.08) -> Image:
@@ -101,9 +142,10 @@ static func _make(name: String) -> Image:
 			img = _noise_img(Color(1, 0, 1), 1, 0.0)
 	return img
 
-static func tex(name: String) -> ImageTexture:
+static func tex(name: String) -> Texture2D:
 	if not _tex.has(name):
-		_tex[name] = ImageTexture.create_from_image(_make(name))
+		var a := art(name)
+		_tex[name] = a if a else ImageTexture.create_from_image(_make(name))
 	return _tex[name]
 
 ## flat-ish colour texture with a little pixel noise (characters, products)

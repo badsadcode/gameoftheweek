@@ -39,8 +39,11 @@ sanity above zero.
 - Voices: the letters (Grandpa, the Supplier, the Landlord) were voiced by Tom with ElevenLabs
   (`src/assets/voice/`, loudness-matched OGG). They play when you read a letter; "Listen again"
   replays them, and they can be switched off in the pause menu.
-- Models: hand-made product models by Tom go in `src/assets/models/<product id>.glb` (any scale,
-  auto-fitted to the shelf slot, textures forced to pixel-sharp). Products without a model are boxes.
+- Art by Tom: pixel-art textures in `src/assets/textures/<name>.png` (walls, floors, street, products,
+  faces, sign, catalogue, paper) override the generated ones by filename; product models in
+  `src/assets/models/<product id>.glb` (any scale, auto-fitted to the shelf slot). Products with a
+  texture but no model are shown as pixel cards; anything missing falls back to code-generated art.
+  Keep `detect_3d/compress_to=0` in the texture `.import` files so pixel art stays lossless.
 - `build.sh <out>` exports the Windows exe and the web build (downloads Godot + templates once).
 - Test bot: `godot --path src -- --autotest [--day=N] [--min=M] [--quit-at=M] [--trace]`
   plays the week, follows the rules and saves screenshots to the user data folder.
