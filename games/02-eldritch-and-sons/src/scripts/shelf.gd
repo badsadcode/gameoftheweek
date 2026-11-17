@@ -1,0 +1,104 @@
+## shelf.gd : a wooden shelf unit holding one product type (up to CAPACITY units).
+## Built facing +Z locally; customers stand at front_point(). Interactable: stock it with a crate.
+class_name Shelf
+extends Node3D
+
+const CAPACITY := 12
+var product := ""
+var count := 0
+var items_node: Node3D
+var sign_label: Label3D
+var index := 0
+
+func build(idx: int) -> void:
+	index = idx
+	var wood := Vox.obj_mat(Color(0.42, 0.28, 0.16))
+	var dark := Vox.obj_mat(Color(0.3, 0.2, 0.12))
+	# frame: two sides, back, three boards
+	Vox.box(self, Vector3(-0.97, 1.1, 0), Vector3(0.06, 2.2, 0.6), dark, false)
+	Vox.box(self, Vector3(0.97, 1.1, 0), Vector3(0.06, 2.2, 0.6), dark, false)
+	Vox.box(self, Vector3(0, 1.1, -0.27), Vector3(2.0, 2.2, 0.06), wood, false)
+	for i in 3:
+		Vox.box(self, Vector3(0, 0.15 + i * 0.7, 0), Vector3(1.94, 0.06, 0.58), wood, false)
+	Vox.box(self, Vector3(0, 2.22, 0), Vector3(2.0, 0.06, 0.6), dark, false)
+	# one collision box for the whole unit, tagged as interactable
+	var body := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(2.0, 2.25, 0.62)
+	cs.shape = shape
+	cs.position = Vector3(0, 1.12, 0)
+	body.add_child(cs)
+	body.set_meta("interact", self)
+	add_child(body)
+	items_node = Node3D.new()
+	add_child(items_node)
+	sign_label = Vox.label(self, "", Vector3(0, 2.38, 0.31), 40, Color(1, 0.92, 0.7))
+	refresh()
+
+func front_point() -> Vector3:
+	return to_global(Vector3(0, 0, 1.15))
+
+func refresh() -> void:
+	for c in items_node.get_children(): c.queue_free()
+	if product == "":
+		sign_label.text = "(empty shelf)"
+		sign_label.modulate = Color(0.7, 0.7, 0.7)
+		return
+	var info := Products.info(product)
+	sign_label.text = "%s  $%d" % [info["name"], info["price"]]
+	sign_label.modulate = Color(0.8, 0.6, 1.0) if info["beyond"] else Color(1, 0.92, 0.7)
+	var col: Color = info["color"]
+	for i in count:
+		var row := i / 4
+		var colm := i % 4
+		var pos := Vector3(-0.66 + colm * 0.44, 0.18 + row * 0.7 + 0.14, 0.02)
+		var it := Vox.box(items_node, pos, Vector3(0.26, 0.28, 0.26), Vox.obj_mat(col, product == "eyes" or product == "jar"), false)
+		it.rotation.y = sin(i * 2.3) * 0.15
+
+func take_one() -> bool:
+	if count <= 0: return false
+	count -= 1
+	if count == 0: product = ""
+	refresh()
+	return true
+
+func prompt(game) -> String:
+	var held = game.player.held
+	if held == null:
+		return "" if product == "" else "%s  (%d/%d)" % [Products.pname(product), count, CAPACITY]
+	if product != "" and product != held.product:
+		return "Shelf holds %s - empty it first" % Products.pname(product)
+	if count >= CAPACITY:
+		return "Shelf is full"
+	return "[E] Stock %s (%d in box)" % [Products.pname(held.product), held.units]
+
+func use(game) -> void:
+	var held = game.player.held
+	if held == null: return
+	if product != "" and product != held.product: return
+	var moved := mini(held.units, CAPACITY - count)
+	if moved <= 0: return
+	product = held.product
+	count += moved
+	held.units -= moved
+	refresh()
+	Sfx.play("stock", 0.8)
+	game.on_stocked(product, moved)
+	if held.units <= 0:
+		game.player.drop_empty()
+	else:
+		held.refresh()
+
+## [R] clear a shelf so it can hold something else (items go back into a box)
+func prompt_alt(game) -> String:
+	if game.player.held == null and product != "": return "[R] Pack %s back into a box" % Products.pname(product)
+	return ""
+
+func use_alt(game) -> void:
+	if game.player.held != null or product == "": return
+	var c = game.spawn_crate(product, count, game.player.global_position + Vector3(0, 0.3, 0))
+	product = ""
+	count = 0
+	refresh()
+	game.player.pick_up(c)

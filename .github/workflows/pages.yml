@@ -29,6 +29,12 @@ jobs:
         with:
           node-version: 20
 
+      - name: Cache Godot + export templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/godot
+          key: godot-4.4.1-v1
+
       - name: Download LÖVE for Windows
         run: |
           curl -sSL -o love.zip "https://github.com/love2d/love/releases/download/${LOVE_VERSION}/love-${LOVE_VERSION}-win64.zip"

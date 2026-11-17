@@ -1,0 +1,30 @@
+{
+  "slug": "02-eldritch-and-sons",
+  "week": 2,
+  "title": "Eldritch & Sons: Fine Goods & Curiosities",
+  "theme": "Eldritch horror shop simulator",
+  "genre": "Shop simulator · Lovecraftian horror · Dark comedy",
+  "engine": "godot",
+  "engine_label": "Godot 4",
+  "tagline": "Running the shop should feel normal. The town around it... less so.",
+  "pitch": "You inherited grandpa's general store in a foggy, blocky little town. Order stock, unpack boxes, fill the shelves and serve the locals. Some of them don't show up on the security camera. One returns things he hasn't bought yet. Mr. Whitlock needs his Tinned Silence at six. And on Friday night, the Landlord comes for the rent.",
+  "exe_name": "EldritchAndSons",
+  "web": true,
+  "accent": "#9b6bff",
+  "emoji": "🐙",
+  "stream_date": "2026-11-27",
+  "youtube_video_id": "",
+  "status": "building",
+  "bad_idea_rating": 5,
+  "bad_idea_note": "an ancient cosmic entity is blocking aisle three",
+  "progress": [
+    { "label": "Chaos thrown at Noor", "done": true },
+    { "label": "Noor's design doc", "done": true },
+    { "label": "Playable shop loop", "done": true },
+    { "label": "Robot playtested", "done": true },
+    { "label": "More weirdness", "done": false },
+    { "label": "Tom playtest", "done": false },
+    { "label": "Friday stream", "done": false }
+  ],
+  "controls": "Unzip and run EldritchAndSons.exe. WASD to move, mouse to look, E to use things, R to refuse a customer, Q to put a box down, Tab for the shop rules. Read grandpa's letter first."
+}

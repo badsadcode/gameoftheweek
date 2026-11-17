@@ -1,0 +1,42 @@
+[
+  {
+    "day": "Day 1 · evening",
+    "kind": "win",
+    "tag": "Playable",
+    "title": "The shop is open (and the robot paid the rent)",
+    "body": "<p>Version 1 is playable. Read grandpa's letter, order stock from the catalogue, carry boxes out of the storeroom, fill the shelves, flip the sign to OPEN and serve the locals at the till. Close up at eight, sleep, find out what happened overnight, repeat.</p><p>The robot playtester worked a full week. It served Mr. Whitlock his Tinned Silence every evening, refused to sell salt to the customer who doesn't appear on the security camera, gave Mrs. Thorne a refund for something she hadn't bought yet, and paid the Landlord on Friday night with $61 to spare.</p><img class='devlog-shot' src='games/02-eldritch-and-sons/screenshot-landlord.png' alt='The Landlord, a tall dark figure with three glowing eyes, standing in the shop at night'>",
+    "scribble": "the robot is now a small business owner"
+  },
+  {
+    "day": "Day 1 · evening",
+    "kind": "idea",
+    "tag": "The weird",
+    "title": "The customer the camera can't see",
+    "body": "<p>Grandpa's second rule: <i>never sell salt to anyone the camera can't see.</i> There's a security camera in the corner of the shop and a little monitor on the counter.</p><p>Behind the scenes, the camera simply isn't allowed to see one particular layer of the world. Most customers live on the normal layer. One of them doesn't. You have to actually look at the monitor while ringing people up, which is exactly the kind of mundane-but-unsettling moment Noor's brief asked for.</p><p>Also: on Wednesday morning there's a house in the empty lot across the street. Its windows are lit. They're the wrong colour.</p><img class='devlog-shot' src='games/02-eldritch-and-sons/screenshot-house.png' alt='A dark house with glowing purple windows in what used to be an empty lot'>",
+    "scribble": "the neighbours say it's always been there"
+  },
+  {
+    "day": "Day 1 · afternoon",
+    "kind": "oops",
+    "tag": "Oops",
+    "title": "Mr. Whitlock is a very slow walker",
+    "body": "<p>The test logs said Mr. Whitlock arrived at 17:40 every day and then... never left. Was he stuck? Haunting the shop? Lost in the space between aisles?</p><p>No. He spawned at the far end of the street and walks with great dignity. The stroll took him a full in-game hour. Customers now start closer to the shop. Mr. Whitlock remains dignified.</p>",
+    "scribble": "he will not be rushed"
+  },
+  {
+    "day": "Day 1 · afternoon",
+    "kind": "idea",
+    "tag": "Tech",
+    "title": "New week, new engine: Godot",
+    "body": "<p>This one needed real 3D: a first-person shop, lights, fog, people walking around. So we switched to <b>Godot 4</b>, our second engine in two weeks.</p><p>Everything is still made from code: the 16×16 pixel textures, the brick walls, the shelves, the townsfolk. Noor's brief asked for blocky characters with real elbows and knees, so every customer is built from rigid boxes on hinges (shoulder, elbow, hip, knee) and animated by rotating the hinges. They walk, reach for shelves, hold out money and, when appropriate, cower.</p>",
+    "scribble": "no artists were harmed, again"
+  },
+  {
+    "day": "Day 1 · morning",
+    "kind": "idea",
+    "tag": "The pitch",
+    "title": "Tom threw chaos at Noor. Noor threw a design doc at us.",
+    "body": "<p>The process: Tom has an idea. Tom throws chaotic fragments of the idea at Noor. Noor translates them into words normal humans understand. Sage builds it.</p><p>This week's idea: an <b>eldritch horror shop simulator with Minecraft-style graphics</b>. Noor's write-up nailed the core: <i>running the shop should feel normal; the world around it should become increasingly impossible.</i> And above all, you still have a business to run, even when an ancient cosmic entity is blocking aisle three.</p>",
+    "scribble": "a compiler with extra steps"
+  }
+]

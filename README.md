@@ -10,6 +10,7 @@ New small games every week (sometimes one, sometimes more), premiered live every
 | Week | Game | Theme | Genre | Engine | Stream |
 | ---- | ---- | ----- | ----- | ------ | ------ |
 | 1 | [Frostline: Last Train to Haven](games/01-frostline/) | Survival on a train | Survival / action | LÖVE (Lua) | Fri 20 Nov 2026 |
+| 2 | [Eldritch & Sons: Fine Goods & Curiosities](games/02-eldritch-and-sons/) | Eldritch horror shop simulator | Shop sim / horror / comedy | Godot 4 | Fri 27 Nov 2026 |
 
 ## Repo layout
 
