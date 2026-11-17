@@ -48,7 +48,7 @@ func build(g) -> void:
 
 # --------------------------------------------------------------------------- pieces
 func _ground_and_street() -> void:
-	Vox.block(self, Vector3(-70, -1.1, -70), Vector3(140, 1.0, 140), Vox.mat("grass"))  # 10cm below the kerb
+	Vox.block(self, Vector3(-70, -1.15, -70), Vector3(140, 1.0, 140), Vox.mat("grass"))  # 15cm below the kerb, 5cm below the road (never level with it: z-fighting)
 	Vox.block(self, Vector3(-40, -0.3, 6), Vector3(80, 0.3, 3), Vox.mat("stone", Color(1.15, 1.15, 1.15)))
 	Vox.block(self, Vector3(-40, -0.35, 9), Vector3(80, 0.25, 5), Vox.mat("cobble", Color(0.75, 0.75, 0.8)))
 	Vox.block(self, Vector3(-40, -0.3, 14), Vector3(80, 0.3, 2), Vox.mat("stone", Color(1.15, 1.15, 1.15)))
