@@ -59,6 +59,7 @@ func _physics_process(dt: float) -> void:
 	velocity.x = lerpf(velocity.x, dir.x * spd, minf(1.0, dt * 12.0))
 	velocity.z = lerpf(velocity.z, dir.z * spd, minf(1.0, dt * 12.0))
 	move_and_slide()
+	_step_up(dir)
 	# head bob + footsteps
 	var hs := Vector2(velocity.x, velocity.z).length()
 	if hs > 0.5 and is_on_floor():
@@ -129,3 +130,20 @@ func drop_empty() -> void:
 	held = null
 	c.queue_free()
 	Sfx.play("box", 0.4, 1.6)
+
+## walk up kerbs and little ledges (up to STEP high) instead of getting stuck on them.
+## Crates (0.5) and the counter (1.05) are taller, so you still can't climb those.
+const STEP := 0.4
+func _step_up(dir: Vector3) -> void:
+	if dir == Vector3.ZERO or not is_on_wall(): return
+	var up := Vector3(0, STEP, 0)
+	var fwd := dir * 0.3
+	if test_move(global_transform, up): return                         # ceiling in the way
+	if test_move(global_transform.translated(up), fwd): return         # it's a real wall
+	# find the ledge height: drop back down from up+forward
+	var probe := global_transform.translated(up + fwd)
+	var col := KinematicCollision3D.new()
+	if test_move(probe, -up, col):
+		var rise := STEP - col.get_travel().length()
+		if rise > 0.02:
+			global_position += Vector3(0, rise + 0.01, 0) + fwd * 0.3

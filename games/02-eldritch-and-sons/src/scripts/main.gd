@@ -93,6 +93,8 @@ func _ready() -> void:
 				day = int(a.substr(6))
 				_new_day_counters()
 		start_game()
+	elif OS.get_cmdline_user_args().has("--kerb-test"):
+		_kerb_test()
 	elif OS.get_cmdline_user_args().has("--ui-shots"):
 		_ui_shots()
 	elif skip_title:
@@ -959,6 +961,29 @@ func _ending(title: String, body: String, color: Color) -> void:
 		return
 	player.frozen = true
 	ui.show_ending(title, body, color, func(): _restart(true))
+
+# --------------------------------------------------------------------------- kerb test (--kerb-test)
+## Tom got stuck on the grass below the kerb. Walk from the grass back onto the pavement.
+func _kerb_test() -> void:
+	started = true
+	player.global_position = Vector3(25, 0.0, 3.0)
+	player.rotation.y = PI          # facing +Z, towards the street
+	await get_tree().create_timer(0.5).timeout
+	print("[kerb] start ", player.global_position)
+	Input.action_press("forward")
+	await get_tree().create_timer(2.0).timeout
+	Input.action_release("forward")
+	var p := player.global_position
+	print("[kerb] end ", p, "  ", "PASS" if p.z > 6.5 else "FAIL")
+	# and the road -> far pavement -> back
+	player.global_position = Vector3(25, 0.0, 11.0)
+	await get_tree().create_timer(0.3).timeout
+	Input.action_press("forward")
+	await get_tree().create_timer(2.5).timeout
+	Input.action_release("forward")
+	p = player.global_position
+	print("[kerb] far side ", p, "  ", "PASS" if p.z > 16.0 else "FAIL")
+	get_tree().quit()
 
 # --------------------------------------------------------------------------- UI screenshots (--ui-shots)
 func _ui_shots() -> void:
