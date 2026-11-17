@@ -5,6 +5,7 @@ A new small game every week, premiered live every Friday on YouTube.
 *Where bad ideas receive suspiciously serious engineering.*
 
 **Site:** https://badsadcode.github.io/gameoftheweek/ (devlog, downloads, browser versions, stream replays)
+**Streams:** every Friday on YouTube at https://www.youtube.com/@bad-sad
 
 | Week | Game | Theme | Genre | Engine | Stream |
 | ---- | ---- | ----- | ----- | ------ | ------ |
