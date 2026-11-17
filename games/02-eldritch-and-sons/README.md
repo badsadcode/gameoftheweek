@@ -14,7 +14,7 @@ Running the shop should feel normal. The world around it becomes increasingly im
 | --- | --- |
 | WASD + mouse | Move and look |
 | Shift | Run |
-| E / left click | Use: pick up boxes, stock shelves, ring up customers, flip the sign, read letters |
+| E / left click | Use: pick up boxes, stock shelves, ring up customers, flip the sign, read letters, open the door |
 | R / right click | Refuse a customer at the till, or pack a shelf back into a box |
 | Q | Put a box down |
 | Tab | Notebook (the shop rules) |
@@ -57,6 +57,8 @@ sanity above zero.
   `cctv`, `lamp`, `bed`, `streetlamp`, `crate`. These only appear once a model exists: `bench`,
   `mailbox`, `bin`, `barrel`, `plant`, `clock`, `mirror` (see `World._decor()`).
   Keep `detect_3d/compress_to=0` in the texture `.import` files so pixel art stays lossless.
+- Front door (`scripts/door.gd`): opens for customers automatically, [E] props it open; solid only when shut.
+  Quick physics checks: `godot --path src -- --kerb-test` (kerb step-up + door).
 - `build.sh <out>` exports the Windows exe and the web build (downloads Godot + templates once).
 - Test bot: `godot --path src -- --autotest [--day=N] [--min=M] [--quit-at=M] [--trace]`
   plays the week, follows the rules and saves screenshots to the user data folder.

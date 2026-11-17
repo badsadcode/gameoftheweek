@@ -150,7 +150,7 @@ func _ease(key: String, target: float, rate: float, dt: float) -> float:
 func _process(dt: float) -> void:
 	if hips == null: return
 	t += dt
-	var moving := clampf(speed / 1.4, 0.0, 1.0)
+	var moving := _ease("move", clampf(speed / 1.4, 0.0, 1.0), 8.0, dt)   # legs settle instead of snapping
 	phase += dt * speed * 4.2
 	var s := sin(phase)
 	# legs: swing from the hip, bend the knee on the back-swing

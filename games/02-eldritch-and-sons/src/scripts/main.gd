@@ -990,6 +990,34 @@ func _kerb_test() -> void:
 	Input.action_release("forward")
 	p = player.global_position
 	print("[kerb] far side ", p, "  ", "PASS" if p.z > 16.0 else "FAIL")
+	# the front door: shut blocks you, open lets you out, opens itself for customers
+	player.global_position = Vector3(0, 0, 3.4)
+	player.rotation.y = PI
+	await get_tree().create_timer(0.3).timeout
+	Input.action_press("forward")
+	await get_tree().create_timer(1.5).timeout
+	Input.action_release("forward")
+	print("[door] shut: z=%.2f  %s" % [player.global_position.z, "PASS" if player.global_position.z < 5.2 else "FAIL"])
+	player.global_position = Vector3(0, 0, 4.4)
+	await get_tree().create_timer(0.2).timeout
+	player.look_target = world.door
+	player.interact()
+	await get_tree().create_timer(0.8).timeout
+	Input.action_press("forward")
+	await get_tree().create_timer(1.5).timeout
+	Input.action_release("forward")
+	print("[door] propped: z=%.2f angle=%.2f  %s" % [player.global_position.z, world.door.angle, "PASS" if player.global_position.z > 6.3 else "FAIL"])
+	world.door.use(self)
+	player.global_position = Vector3(-4.6, 0, 0.7)
+	await get_tree().create_timer(1.0).timeout
+	var shut_angle: float = world.door.angle
+	var c := _new_customer(VoxelPerson.random_look(rng), "normal", Vector3(0, 0, 9.0))
+	c.wants = ["bread"]
+	var max_angle := 0.0
+	for i in 40:
+		await get_tree().create_timer(0.1).timeout
+		max_angle = maxf(max_angle, world.door.angle)
+	print("[door] closed again: %.2f, opened for customer: %.2f  %s" % [shut_angle, max_angle, "PASS" if shut_angle < 0.02 and max_angle > 1.0 else "FAIL"])
 	get_tree().quit()
 
 # --------------------------------------------------------------------------- UI screenshots (--ui-shots)
@@ -1122,6 +1150,7 @@ func _ui_shots() -> void:
 	await snap.call("agnes_boarded")
 	day = 5
 	minute = 21 * 60
+	flags["landlord_came"] = true   # not now, thank you
 	player.global_position = Vector3(2.0, 0, 11.0)
 	player.rotation.y = PI / 2
 	_apply_time_of_day()
@@ -1135,6 +1164,19 @@ func _ui_shots() -> void:
 	await snap.call("night_walk")
 	night_walk = false
 	if walk_figure: walk_figure.queue_free()
+	# the front door, from inside: shut (with the prompt), then open for a customer
+	minute = 11 * 60
+	_apply_time_of_day()
+	player.global_position = Vector3(0.3, 0, 3.2)
+	player.rotation.y = PI
+	player.cam.rotation.x = 0.0
+	await snap.call("door_shut")
+	var visitor := _new_customer(VoxelPerson.random_look(rng), "normal", Vector3(0, 0, 8.0))
+	visitor.wants = ["bread"]
+	await get_tree().create_timer(1.0).timeout
+	await snap.call("door_open")
+	customers.erase(visitor)
+	visitor.queue_free()
 	# screen effects, one at a time, in the shop by day
 	sanity = 100.0
 	minute = 11 * 60
@@ -1187,7 +1229,7 @@ func _bot(dt: float) -> void:
 	_bot_t = 0.3
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--quit-at=") and minute >= float(a.substr(10)):
-			print("[bot] quit-at reached")
+			print("[bot] quit-at reached: money %d, served %d, sales %d, angry %d" % [money, today["served"], today["sales"], today["angry"]])
 			get_tree().quit()
 	if OS.get_cmdline_user_args().has("--trace"):
 		for c in customers:

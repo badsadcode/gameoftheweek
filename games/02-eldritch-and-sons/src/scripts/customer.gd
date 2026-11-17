@@ -76,6 +76,7 @@ func _walk(dt: float) -> bool:
 	var d := to.length()
 	if d < 0.08:
 		path.pop_front()
+		if path.is_empty(): body.speed = 0.0   # arrived: stop the legs
 		if position.distance_to(World.DOOR_OUT) < 0.5 or position.distance_to(World.DOOR_IN) < 0.5:
 			if not flags.get("silent", false): game.door_passed(self)
 		return path.is_empty()

@@ -39,6 +39,7 @@ func setup(g) -> void:
 	ray = RayCast3D.new()
 	ray.target_position = Vector3(0, 0, -REACH)
 	ray.collide_with_bodies = true
+	ray.collision_mask = 1 | 2   # layer 2: things you can look at but not bump into (the door)
 	cam.add_child(ray)
 	ray.add_exception(self)
 

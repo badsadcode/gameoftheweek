@@ -1,5 +1,12 @@
 [
   {
+    "day": "Day 3 · night",
+    "kind": "fix",
+    "tag": "Playtest",
+    "title": "A door, a kerb and some very tired legs",
+    "body": "<p>Tom's playtest notes, all fixed:</p><ul><li><b>The kerb of no return.</b> Tom walked off the pavement onto the grass and couldn't get back up. He was stuck between the kerb, a wall and the invisible edge of the world. You can now step up kerbs. My first fix then put the grass at exactly the height of the road, and the two flickered as they fought over who gets drawn. The grass now sits 5 cm lower.</li><li><b>Walking in place.</b> Customers kept marching on the spot while reaching for the bread. Their legs now stop when they do.</li><li><b>A front door!</b> Double doors with glass panes. Press E to prop them open or shut them. They open by themselves for customers and close behind them, and they never shut on you while you're standing in the doorway.</li></ul>"
+  },
+  {
     "day": "Day 3 · evening",
     "kind": "progress",
     "tag": "Polish",

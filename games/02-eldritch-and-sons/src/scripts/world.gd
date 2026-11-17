@@ -19,6 +19,7 @@ var cctv_cam: Camera3D
 var sign_label: Label3D
 var register_label: Label3D
 var mystery_house: Node3D
+var door: ShopDoor
 var agnes_house: Node3D        # across the street; boarded up from Thursday
 var agnes_glows: Array = []
 var empty_lot: Node3D
@@ -104,6 +105,10 @@ func _shop_shell() -> void:
 	# door frame + the OPEN/CLOSED sign you flip from inside
 	Vox.block(self, Vector3(-1.1, 0, 4.85), Vector3(0.12, 2.9, 0.3), Vox.mat("darkplanks"), false)
 	Vox.block(self, Vector3(0.98, 0, 4.85), Vector3(0.12, 2.9, 0.3), Vox.mat("darkplanks"), false)
+	door = ShopDoor.new()
+	door.position = Vector3(0, 0.02, 5.5)
+	add_child(door)
+	door.build(game)
 	var board := Vox.box(self, Vector3(1.6, 1.9, 4.95), Vector3(0.8, 0.4, 0.06), Vox.obj_mat(Color(0.35, 0.22, 0.12)), false)
 	sign_label = Vox.label(self, "CLOSED", Vector3(1.6, 1.9, 4.91), 46, Color(1, 0.4, 0.3))
 	sign_label.rotation.y = PI
