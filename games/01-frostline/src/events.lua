@@ -105,7 +105,7 @@ function E.update(G, dt)
       if G.speed <= E.DEPOT_SPEED then
         G.depotLoading = true
         if G.coal < G.maxCoal then
-          G.loadAcc = G.loadAcc + 2.4 * dt
+          G.loadAcc = G.loadAcc + 3.2 * dt
           if G.loadAcc >= 1 then
             G.loadAcc = G.loadAcc - 1
             G.coal = math.min(G.maxCoal, G.coal + 1)

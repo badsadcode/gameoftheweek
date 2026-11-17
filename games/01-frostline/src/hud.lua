@@ -158,6 +158,7 @@ function HUD.play(G)
   lg.setFont(F.small)
   lg.setColor(0.85, 0.9, 1)
   local hands = P.carrying and (P.carrying:sub(1, 1):upper() .. P.carrying:sub(2)) or "empty"
+  if P.carrying == "wood" then hands = "Firewood" end
   lg.print("Hands: " .. hands, 30, 100)
   lg.setColor(0.75, 0.8, 0.9)
   lg.printf("Scrap: " .. G.scrap, 30, 100, 238, "right")
@@ -304,6 +305,12 @@ function HUD.play(G)
   end
   if G.depotLoading then warn("LOADING COAL... (trader open in the cargo car)", { 0.6, 1, 0.6 }) end
   if G.depotTooFast then warn("AT DEPOT - TOO FAST TO LOAD! Pull the brake", { 1, 0.85, 0.3 }) end
+  if G.coal <= 8 and not G.depotLoading then
+    local nextKm = Events.DEPOT_KMS[G.depotIdx]
+    local where = nextKm and string.format("next depot in %.0f km", math.max(0, nextKm - G.dist)) or "no depots left"
+    local extra = G.crates > 0 and (" - smash crates in the cargo car!") or ""
+    warn((G.coal == 0 and "OUT OF COAL" or "Coal low") .. ": " .. where .. (G.coal <= 3 and extra or ""), { 1, 0.6, 0.3 })
+  end
   if G.fuel <= 0 then warn("FIREBOX OUT - THE TRAIN IS STOPPING!", { 1, 0.3, 0.2 })
   elseif G.fuel < 20 then warn("Firebox low", { 1, 0.6, 0.3 }) end
   if G.carTemp < 0 then warn("Passengers are freezing!", { 0.5, 0.8, 1 }) end
@@ -546,7 +553,7 @@ function HUD.ending(G, won)
     { "Distance", string.format("%.1f km", G.dist) },
     { "Raiders thrown off", s.kills .. (s.knocked > 0 and ("  (" .. s.knocked .. " by bridges)") or "") },
     { "Sleds outrun", s.outrun .. "" },
-    { "Coal shovelled", s.shoveled .. "" },
+    { "Coal shovelled", s.shoveled .. ((s.crates or 0) > 0 and ("  (+" .. s.crates .. " crates burned)") or "") },
     { "Fires put out", s.fires .. "" },
     { "Fevers cured", s.cured .. "" },
     { "Upgrades bought", s.upgrades .. "" },

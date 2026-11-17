@@ -130,6 +130,11 @@ function R.person(x, y, o)
     for k = 0, 2 do lg.rectangle("fill", 8 + k * 6, -44, 5, 18, 2, 2) end
     lg.setColor(0.3, 0.25, 0.2); lg.line(17, -44, 20, -52)
     lg.setColor(1, 0.85, 0.3, 0.6 + 0.4 * math.sin(t * 40)); lg.circle("fill", 20, -53, 2.5)
+  elseif o.carry == "wood" then
+    lg.setColor(0.55, 0.38, 0.22)
+    lg.push(); lg.translate(15, -36); lg.rotate(-0.3)
+    lg.rectangle("fill", -10, -4, 22, 5, 1, 1); lg.rectangle("fill", -8, 2, 20, 5, 1, 1)
+    lg.pop()
   elseif o.carry then
     lg.setColor(0.07, 0.07, 0.08)
     lg.circle("fill", 15, -34, 8)
@@ -304,7 +309,11 @@ local function interior(G, c, x)
     crate(x + 18, floor - 60, 60, 60); crate(x + 26, floor - 104, 46, 44)
     lg.setColor(0.75, 0.12, 0.1); lg.rectangle("fill", x + 26, floor - 42, 44, 16)
     lg.setColor(1, 0.9, 0.8); lg.print("TNT", x + 35, floor - 41)
-    crate(x + 290, floor - 56, 70, 56); crate(x + 230, floor - 40, 50, 40)
+    -- breakable crate stack (firewood): one box per crate left
+    for k = 0, (G.crates or 0) - 1 do
+      local col, row = k % 3, math.floor(k / 3)
+      crate(x + 240 + col * 40 + row * 18, floor - 36 - row * 36, 36, 36)
+    end
     lg.setColor(0.30, 0.32, 0.36)
     lg.rectangle("fill", x + 120, floor - 54, 34, 54, 6, 6); lg.rectangle("fill", x + 160, floor - 54, 34, 54, 6, 6)
     lg.setColor(0.2, 0.2, 0.22)

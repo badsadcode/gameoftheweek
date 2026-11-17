@@ -78,7 +78,7 @@ function Game.newRun(state)
   T.reset()
   menuStack = {}
   G = {
-    state = state or "play", time = 0, dist = 0, progress = 0, speed = 58, fuel = 75, coal = 24, maxCoal = 50,
+    state = state or "play", time = 0, dist = 0, progress = 0, speed = 58, fuel = 75, coal = 30, maxCoal = 50, crates = T.CRATES, coalHint = false,
     stove = 70, carTemp = 14, ambient = -22, freeze = 0, bandages = 3, brake = false,
     scrap = 2, upgrades = {}, soupT = 25, pipT = 0,
     scroll = 0, camX = 0, shake = 0, flash = 0, toasts = {}, particles = {}, items = {},
@@ -533,6 +533,11 @@ function Game.update(dt)
   Story.updateRadio(G, dt)
   Story.updateBarks(G, dt)
   Story.updateRequests(G, dt)
+  if not G.coalHint and G.coal <= 4 and G.crates > 0 then
+    G.coalHint = true
+    G.radio = { text = "Marisol here. Running low on coal? Burn the cargo! Those crates in your cargo car make decent firewood.", t = 0 }
+    Audio.play("radio", 0.55)
+  end
   updateTrain(dt)
   updateDetached(dt)
   G.player:update(G, dt)
@@ -570,9 +575,9 @@ function Game.currentInteraction()
   end
 
   if math.abs(x - T.FURNACE_X) < 40 then
-    if P.carrying == "coal" then
+    if P.carrying == "coal" or P.carrying == "wood" then
       return { label = "Feed the furnace", fn = function()
-        local add = Upgrades.has(G, "bellows") and 17 or 12
+        local add = (Upgrades.has(G, "bellows") and 17 or 12) - (P.carrying == "wood" and 2 or 0)
         G.fuel = math.min(100, G.fuel + add)
         FX.float(G, T.FURNACE_X, T.FLOOR_Y - 100, "+" .. add .. " fuel", { 1, 0.65, 0.25 })
         P.carrying = nil
@@ -600,6 +605,18 @@ function Game.currentInteraction()
       Game.openMenu(m)
     end }
   end
+  if math.abs(x - T.CRATES_X) < 70 and car and car.kind == "cargo" then
+    if G.crates <= 0 then return { label = "Nothing left to burn here", disabled = true } end
+    if P.carrying then return handsFull(P) end
+    return { label = "Smash a crate for firewood (" .. G.crates .. " left)", fn = function()
+      G.crates = G.crates - 1
+      P.carrying = "wood"
+      G.stats.crates = (G.stats.crates or 0) + 1
+      Audio.play("hit", 0.7, 1.3)
+      FX.hitstop(G, 0.05)
+      Particles.burst(G, T.CRATES_X, T.FLOOR_Y - 30, 14, { speed = 220, vy = -120, color = { 0.55, 0.4, 0.25 }, life = 0.6, square = true, size = 4 })
+    end }
+  end
   if math.abs(x - T.COAL_X) < 125 then
     if P.carrying then return handsFull(P) end
     if G.coal <= 0 then return { label = "The tender is empty!", disabled = true } end
@@ -624,10 +641,11 @@ function Game.currentInteraction()
       end }
     end
     if math.abs(x - T.STOVE_X) < 50 then
-      if P.carrying == "coal" then
+      if P.carrying == "coal" or P.carrying == "wood" then
         return { label = "Feed the stove", fn = function()
-          G.stove = math.min(100, G.stove + 30)
-          FX.float(G, T.STOVE_X, T.FLOOR_Y - 90, "+30 heat", { 1, 0.82, 0.35 })
+          local heat = P.carrying == "wood" and 25 or 30
+          G.stove = math.min(100, G.stove + heat)
+          FX.float(G, T.STOVE_X, T.FLOOR_Y - 90, "+" .. heat .. " heat", { 1, 0.82, 0.35 })
           if love.math.random() < 0.35 then Story.react(G, "stoked") end
           P.carrying = nil
           G.stats.shoveled = G.stats.shoveled + 1

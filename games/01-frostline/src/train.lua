@@ -29,7 +29,9 @@ T.COAL_X    = T.cars[4].x + T.CAR_W / 2
 T.STOVE_X   = T.cars[2].x + T.CAR_W / 2
 T.MEDKIT_X  = T.cars[1].x + 70
 T.DYNAMITE_X = T.cars[3].x + 60         -- crate in the cargo car (boss fight)
-T.TRADER_X  = T.cars[3].x + T.CAR_W / 2 + 60
+T.TRADER_X  = T.cars[3].x + 160          -- depot trader stands by the barrels
+T.CRATES_X  = T.cars[3].x + 300            -- breakable crates (emergency firewood)
+T.CRATES = 6
 
 -- index of the rear-most car still attached (raiders can uncouple cars)
 T.firstAttached = 1

@@ -177,8 +177,10 @@ local function bot(G)
     dest = T.LEVER_X
   elseif G.depotLoading and Upgrades.cheapestAffordable(G) and not P.carrying then
     dest = T.TRADER_X
-  elseif P.carrying == "coal" then
+  elseif P.carrying == "coal" or P.carrying == "wood" then
     dest = (G.stove < 40 and G.fuel > 25) and T.STOVE_X or T.FURNACE_X
+  elseif G.coal == 0 and G.crates > 0 and (G.fuel < 50 or G.stove < 30) then
+    dest = T.CRATES_X
   elseif P.carrying then
     dest = T.FURNACE_X -- holding something odd; just wander to the cab
   elseif G.fuel < 85 or G.stove < 40 then
@@ -274,6 +276,7 @@ local function setupScenes()
         require("passengers").find(G, "bruno").alive = false; require("passengers").find(G, "bruno").fate = "froze"; G.passengers = 7
       end },
     { "lose", function() local G = play(41); G.player.health = 0; G.player.warmth = 0 end },
+    { "crates", function() local G = play(25); G.coal = 2; G.player.x = 1150; G.player.facing = 1; G.crates = 4; G.radioIdx = 99; G.nextHazardKm = 999; G.nextOverheadKm = 999 end },
     { "passengers", function() local G = play(20); G.player.x = 690; G.player.facing = -1; G.player.carrying = "coal" end },
   }
 end
@@ -304,7 +307,7 @@ function Dev.updateScenes(dt)
   end
   Game.update(1 / 60)
   local name = scenes[sceneIdx] and scenes[sceneIdx][1]
-  if name == "boss" or name == "passengers" or name == "chatter" then
+  if name == "boss" or name == "passengers" or name == "chatter" or name == "crates" then
     local G = Game.state(); G.toasts = {}; G.overheads = {}
   end
 end
