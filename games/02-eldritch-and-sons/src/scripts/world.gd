@@ -21,6 +21,7 @@ var register_label: Label3D
 var mystery_house: Node3D
 var empty_lot: Node3D
 var letter: Interactable
+var fancy := false   # true on Forward+ (desktop): shadows, volumetric fog, glow, SSAO
 
 # customer navigation points
 const SPAWNS := [Vector3(-17, 0, 7.6), Vector3(17, 0, 7.6)]
@@ -182,6 +183,7 @@ func _lamp(pos: Vector3, energy := 1.4, range_ := 9.0) -> void:
 	add_child(l)
 	lamps.append(l)
 	var m := Vox.box(self, pos + Vector3(0, 0.25, 0), Vector3(0.3, 0.2, 0.3), Vox.obj_mat(Color(1, 0.85, 0.5), true), false)
+	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # the bulb mustn't shadow its own ceiling
 	lamp_meshes.append(m)
 	Vox.box(self, pos + Vector3(0, 0.45, 0), Vector3(0.04, 0.3, 0.04), Vox.obj_mat(Color(0.2, 0.2, 0.2)), false)
 
@@ -205,6 +207,34 @@ func _lights() -> void:
 	env.fog_density = 0.035
 	we.environment = env
 	add_child(we)
+	# Forward+ has a RenderingDevice; Compatibility (web, old GPUs) doesn't
+	fancy = RenderingServer.get_rendering_device() != null
+	if fancy: _fancy_lighting()
+
+## the good stuff, desktop only: lamp shadows, light you can see in the fog, glowing eyes
+func _fancy_lighting() -> void:
+	for l in lamps:
+		l.shadow_enabled = true
+		l.shadow_blur = 1.5
+		l.light_volumetric_fog_energy = 3.5
+	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 45.0
+	env.fog_density = 0.018
+	env.volumetric_fog_enabled = true
+	env.volumetric_fog_density = 0.03
+	env.volumetric_fog_albedo = Color(0.85, 0.87, 0.9)
+	env.volumetric_fog_anisotropy = 0.35
+	env.volumetric_fog_length = 48.0
+	env.volumetric_fog_ambient_inject = 0.4
+	env.ssao_enabled = true
+	env.ssao_radius = 1.1
+	env.ssao_intensity = 1.6
+	env.glow_enabled = true
+	env.glow_intensity = 1.0
+	env.glow_bloom = 0.08
+	env.glow_hdr_threshold = 0.8
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 1.1
 
 func _house(from: Vector3, size: Vector3, wall: String, tint := Color.WHITE, facing := 1) -> Node3D:
 	var h := Node3D.new()
@@ -258,10 +288,11 @@ func _neighbourhood() -> void:
 	# street lamps
 	for x in [-14.0, 0.0, 14.0]:
 		Vox.block(self, Vector3(x - 0.12, 0, 8.4), Vector3(0.24, 3.6, 0.24), Vox.obj_mat(Color(0.15, 0.15, 0.17)))
-		Vox.box(self, Vector3(x, 3.75, 8.5), Vector3(0.5, 0.35, 0.5), Vox.obj_mat(Color(1, 0.85, 0.55), true), false)
+		Vox.box(self, Vector3(x, 3.75, 8.5), Vector3(0.5, 0.35, 0.5), Vox.obj_mat(Color(1, 0.85, 0.55), true), false).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var l := OmniLight3D.new()
 		l.position = Vector3(x, 3.4, 8.5)
 		l.light_color = Color(1, 0.8, 0.5)
+		l.light_volumetric_fog_energy = 5.0
 		l.omni_range = 9.0
 		l.light_energy = 0.0
 		add_child(l)

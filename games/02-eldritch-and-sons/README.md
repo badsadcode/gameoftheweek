@@ -31,7 +31,9 @@ The Landlord collects $150 on Friday night. Keep your money up, your reputation 
 sanity above zero.
 
 ## Tech
-- Engine: [Godot 4.4](https://godotengine.org) (GDScript, compatibility renderer).
+- Engine: [Godot 4.4](https://godotengine.org) (GDScript). The Windows build uses Forward+ (lamp
+  shadows, volumetric fog, glow, SSAO; set up in `World._fancy_lighting()`); the web build uses the
+  Compatibility renderer automatically (`rendering_method.web`), and old GPUs fall back to it too.
 - Everything is built in code: procedural 16×16 pixel textures, box-built world, articulated
   voxel characters (rigid parts on shoulder/elbow/hip/knee pivots), synthesized sound.
 - The security camera is a second camera that can't see visual layer 2. Some customers live on layer 2.

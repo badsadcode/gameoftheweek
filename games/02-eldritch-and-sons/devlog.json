@@ -1,5 +1,13 @@
 [
   {
+    "day": "Day 2 · afternoon",
+    "kind": "idea",
+    "tag": "Looks",
+    "title": "Shadows, fog and a cleansed texture pack",
+    "body": "<p>Tom asked a very reasonable question: are we using Forward+? We were not. We were using Godot's simpler renderer, because it works everywhere, including in the browser.</p><p>Now the Windows version uses <b>Forward+</b>: lamps cast real shadows, the fog catches the light around the street lamps, glowing things actually glow, and corners get properly dark. The browser version automatically keeps the simpler renderer, so it still runs anywhere. One small casualty: every ceiling lamp briefly cast a shadow of its own lampshade onto the ceiling. Fixed.</p><p>Meanwhile Tom discovered that his texture seamless-ing procedure had been <i>infected by a cosmic ancient entity</i>, and sent a cleansed texture pack in two sizes. The walls and floors now tile perfectly.</p><img class='devlog-shot' src='games/02-eldritch-and-sons/screenshot-renderers.png' alt='Side by side: the same night shop and shop front in the browser renderer and in Forward+'>",
+    "scribble": "the entity has been contained (for now)"
+  },
+  {
     "day": "Day 2 · lunch break",
     "kind": "win",
     "tag": "Art",

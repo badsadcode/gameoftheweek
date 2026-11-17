@@ -217,6 +217,9 @@ func _apply_time_of_day() -> void:
 	sky = sky.lerp(Color(0.65, 0.38, 0.3), dusk * 0.6)
 	world.env.background_color = sky
 	world.env.fog_light_color = sky.lerp(Color(0.3, 0.3, 0.35), 0.3)
+	if world.fancy:
+		world.env.volumetric_fog_albedo = sky.lerp(Color(0.85, 0.87, 0.9), 0.5)
+		world.env.volumetric_fog_density = lerpf(0.07, 0.025, day_k)
 	world.env.ambient_light_energy = lerpf(0.18, 0.65, day_k)
 	world.sun.light_energy = lerpf(0.0, 0.7, day_k)
 	world.sun.light_color = Color(1, 0.95, 0.9).lerp(Color(1, 0.6, 0.4), dusk)
@@ -842,6 +845,13 @@ func _ui_shots() -> void:
 	minute = 10 * 60
 	_apply_time_of_day()
 	await snap.call("facade")
+	minute = 22 * 60
+	_apply_time_of_day()
+	await snap.call("street_night")
+	player.global_position = Vector3(3.0, 0, 3.6)
+	player.rotation.y = atan2(7.0, 7.1)
+	player.cam.rotation.x = -0.05
+	await snap.call("shop_night")
 	sanity = 25.0
 	minute = 21 * 60
 	_apply_time_of_day()
