@@ -91,6 +91,9 @@ func _work_out() -> void:
 		if s: _aim("Put the %s on the glowing shelf" % Products.pname(held.product), s.global_position + Vector3(0, 2.95, 0))
 		else: _aim("No free shelf! [R] at a shelf packs its stock back into a box", null)
 		return
+	if g.phone and g.phone.is_ringing():
+		_aim("The phone is ringing (behind the counter)", Phone.POS + Vector3(0.1, 0.45, 0))
+		return
 	var front: Customer = g._front()
 	if front:
 		if front.kind == "landlord": _aim("Pay the Landlord at the till", TILL)

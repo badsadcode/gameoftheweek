@@ -206,6 +206,7 @@ func _process(dt: float) -> void:
 					state = "wait"
 					wait_t = 0.0
 					if refund_item != "": say("RETURN", 999.0)
+					elif flags.has("offer"): say("About the money...", 999.0)
 					elif kind == "landlord": say("RENT.", 999.0)
 					else: say("$%d" % basket_total(), 999.0)
 				_face(Vector3(-4.6, 0, 2.0), dt)

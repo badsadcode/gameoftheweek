@@ -281,6 +281,15 @@ func toggle_notebook() -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(680, 0)
 		v.add_child(l)
+	var items: Array = game.flags.get("items", [])
+	if not items.is_empty():
+		v.add_child(lbl("\nIN THE TILL DRAWER", 22, C_PURPLE))
+		for id in items:
+			var odd: Dictionary = game.ODDITIES[id]
+			var il := lbl("- %s. %s" % [odd["name"], odd["note"]], 20, Color(0.85, 0.8, 0.95), mono)
+			il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			il.custom_minimum_size = Vector2(680, 0)
+			v.add_child(il)
 	v.add_child(lbl("\nCONTROLS", 22, C_GOLD))
 	v.add_child(lbl("WASD move · Shift run · Mouse look · E use · R refuse/alternate · Q put a box down", 20, Color(0.8, 0.8, 0.8), mono))
 	v.add_child(button("Close", close_panel))
@@ -373,7 +382,7 @@ func night_card(lines: Array, on_done: Callable) -> void:
 		cover.queue_free()
 		on_done.call())
 
-func show_title(on_start: Callable) -> void:
+func show_title(on_start: Callable, on_continue := Callable()) -> void:
 	var p := Control.new()
 	p.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
@@ -396,10 +405,15 @@ func show_title(on_start: Callable) -> void:
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(tag)
 	v.add_child(Control.new())
-	v.add_child(button("Open the shop", func():
+	if on_continue.is_valid():
+		var d := SaveGame.day_saved()
+		v.add_child(button("Continue: %s morning" % ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][clampi(d - 1, 0, 4)], func():
+			close_panel()
+			on_continue.call(), 28, C_GOLD))
+	v.add_child(button("Open the shop" + ("  (new week)" if on_continue.is_valid() else ""), func():
 		close_panel()
-		on_start.call(), 28, C_GOLD))
-	v.add_child(button("Settings", func(): show_settings(func(): show_title(on_start)), 22))
+		on_start.call(), 28 if not on_continue.is_valid() else 22, C_GOLD if not on_continue.is_valid() else C_TEXT))
+	v.add_child(button("Settings", func(): show_settings(func(): show_title(on_start, on_continue)), 22))
 	v.add_child(button("Quit", func(): get_tree().quit(), 22))
 	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 2\nLetters voiced by Tom (made with ElevenLabs)", 16, Color(0.6, 0.6, 0.7))
 	c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

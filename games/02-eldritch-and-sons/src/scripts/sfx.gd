@@ -82,6 +82,11 @@ func _build() -> void:
 	_streams["good"] = _wav(_render(0.8, func(t, u):
 		var f := 784.0 if t < 0.15 else 1175.0
 		return sin(TAU * f * t) * exp(-fmod(t, 0.15) * 6.0) * 0.35))
+	# old bell telephone: a hammer rattling between two bells
+	_streams["ring"] = _wav(_render(1.0, func(t, u):
+		var hit := fmod(t, 0.05)
+		var f := 1180.0 if int(t / 0.05) % 2 == 0 else 1420.0
+		return (sin(TAU * f * t) * 0.6 + sin(TAU * f * 2.7 * t) * 0.2) * exp(-hit * 30.0) * minf(1.0, (1.0 - u) * 8.0) * 0.4))
 	# coin
 	_streams["coin"] = _wav(_render(0.35, func(t, u): return (sin(TAU * 1975 * t) + sin(TAU * 2637 * t) * 0.6) * exp(-t * 12.0) * 0.3))
 	# ambient shop hum (looping)

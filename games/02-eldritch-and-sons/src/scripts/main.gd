@@ -52,6 +52,7 @@ var wind: AudioStreamPlayer
 var voice: AudioStreamPlayer   # voiced letters (recorded by Tom with ElevenLabs)
 var ending := false
 var guide: Guide
+var phone: Phone
 var night_walk := false        # the interactive 3 AM walk (Wednesday night)
 var walk_lines: Array = []
 var walk_t := 0.0
@@ -78,6 +79,9 @@ func _ready() -> void:
 	guide = Guide.new()
 	add_child(guide)
 	guide.setup(self)
+	phone = Phone.new()
+	add_child(phone)
+	phone.build(self)
 	hum = Sfx.loop("hum", 0.18)
 	voice = AudioStreamPlayer.new()
 	add_child(voice)
@@ -93,6 +97,8 @@ func _ready() -> void:
 				day = int(a.substr(6))
 				_new_day_counters()
 		start_game()
+	elif OS.get_cmdline_user_args().has("--systems-test"):
+		_systems_test()
 	elif OS.get_cmdline_user_args().has("--kerb-test"):
 		_kerb_test()
 	elif OS.get_cmdline_user_args().has("--ui-shots"):
@@ -101,7 +107,7 @@ func _ready() -> void:
 		start_game()
 	else:
 		player.frozen = true
-		ui.show_title(start_game)
+		ui.show_title(_new_game, _continue_game if SaveGame.exists() else Callable())
 
 func _setup_input() -> void:
 	var keys := {
@@ -145,7 +151,21 @@ func start_game() -> void:
 	started = true
 	player.frozen = false
 	if not autotest: Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	ui.toast("Monday. Grandpa left a letter on the doormat.", UI.C_GOLD, 6.0)
+	if day == 1: ui.toast("Monday. Grandpa left a letter on the doormat.", UI.C_GOLD, 6.0)
+	else: ui.toast("%s morning. There's something on the doormat." % day_name().capitalize(), UI.C_GOLD, 6.0)
+
+func _new_game() -> void:
+	SaveGame.clear()
+	start_game()
+
+## "Continue": back to the morning the save was made
+func _continue_game() -> void:
+	SaveGame.load_into(self)
+	player.global_position = Vector3(-2.2, 0.05, -8.0)
+	player.rotation.y = 0.0
+	world.letter.visible = true
+	world.letter.process_mode = Node.PROCESS_MODE_INHERIT
+	start_game()
 
 # --------------------------------------------------------------------------- input
 func _unhandled_input(e: InputEvent) -> void:
@@ -461,6 +481,11 @@ func _spawn_normal() -> void:
 	var c := _new_customer(VoxelPerson.random_look(rng))
 	c.cname = NAMES[rng.randi() % NAMES.size()]
 	c.wants = _random_wants(rng.randf() < 0.12 * day)
+	# one customer a day (from Tuesday) is short of money and offers something else
+	var odd: String = ODD_BY_DAY.get(day, "")
+	if odd != "" and not flags.get("odd_day_%d" % day, false) and minute >= 9 * 60 and minute < 17 * 60 and rng.randf() < 0.25:
+		flags["odd_day_%d" % day] = true
+		c.flags["offer"] = odd
 
 func door_passed(c: Customer) -> void:
 	if c.flags.get("rang", 0) < 2 and c.position.z > 3.0:
@@ -533,12 +558,17 @@ func register_prompt() -> String:
 	var c := _front()
 	if c == null:
 		return "The till. Nobody is waiting."
+	if c.flags.has("offer"):
+		return "%s can't pay $%d. Offers you %s instead.\n[E] Accept it     [R] Insist on money" % [c.cname, c.basket_total(), ODDITIES[c.flags["offer"]]["name"].to_lower()]
 	match c.kind:
+		"tooth_buyer":
+			return "[E] Sell %s the tooth ($45)" % c.cname
 		"returner":
 			return "[E] Refund $%d for %s\n(%s hasn't bought it yet)" % [Products.info(c.refund_item)["price"], Products.pname(c.refund_item), c.cname]
 		"landlord":
-			if money >= RENT: return "[E] Pay the rent ($%d)" % RENT
-			return "You only have $%d of $%d..." % [money, RENT]
+			var due := _rent_due()
+			if money >= due: return ("[E] Pay $%d + the blinking coin" % due) if due < RENT else ("[E] Pay the rent ($%d)" % RENT)
+			return "You only have $%d of $%d..." % [money, due]
 	return "[E] Ring up %s: %s  ($%d)" % [c.cname, c.basket_text(), c.basket_total()]
 
 func register_alt_prompt() -> String:
@@ -551,7 +581,20 @@ func register_alt_prompt() -> String:
 func register_use() -> void:
 	var c := _front()
 	if c == null: return
+	if c.flags.has("offer"):
+		_accept_oddity(c)
+		return
 	match c.kind:
+		"tooth_buyer":
+			money += 45
+			today["income"] += 45
+			_pop_money(45)
+			flags["items"].erase("tooth")
+			Sfx.play("till", 0.8)
+			c.say("Splendid. Still warm.", 4.0)
+			ui.toast("Dr. Quill wraps the tooth in a handkerchief and leaves humming.", UI.C_GOLD, 5.0)
+			c.leave()
+			return
 		"returner":
 			var price: int = Products.info(c.refund_item)["price"]
 			money -= price
@@ -563,12 +606,16 @@ func register_use() -> void:
 			c.leave()
 			return
 		"landlord":
-			if money < RENT:
+			var due := _rent_due()
+			if money < due:
 				Sfx.play("wrong", 0.4, 1.4)
 				ui.toast("Not enough. He waits. Patiently. Forever, if necessary.", UI.C_PURPLE)
 				return
-			money -= RENT
-			_pop_money(-RENT)
+			if due < RENT:
+				flags["items"].erase("coin")
+				ui.toast("The Landlord holds the blinking coin up to one of his eyes. It blinks back. He seems pleased.", UI.C_PURPLE, 6.0)
+			money -= due
+			_pop_money(-due)
 			flags["rent_paid"] = true
 			flags["paid_with"] = "money"
 			Sfx.play("till", 1.0, 0.6)
@@ -609,7 +656,17 @@ func register_use() -> void:
 func register_refuse() -> void:
 	var c := _front()
 	if c == null: return
+	if c.flags.has("offer"):
+		# fine, they find the money after all
+		c.flags.erase("offer")
+		c.flags["bye"] = "Suit yourself."
+		register_use()
+		return
 	match c.kind:
+		"tooth_buyer":
+			c.say("A pity. Teeth don't keep.", 4.0)
+			c.leave()
+			return
 		"landlord":
 			flags["rent_paid"] = true
 			flags["paid_with"] = "sanity"
@@ -673,6 +730,16 @@ func _specials() -> void:
 			c.flags["outside"] = true
 	# the regulars
 	_regulars()
+	# whoever wants the tooth comes the day after you get it
+	if flags.get("items", []).has("tooth") and day > int(flags.get("tooth_day", 99)) and not flags.get("tooth_buyer_done", false) and minute >= 12 * 60 and is_open:
+		flags["tooth_buyer_done"] = true
+		var look := { "skin": Color(0.93, 0.9, 0.86), "shirt": Color(0.9, 0.9, 0.88), "pants": Color(0.2, 0.2, 0.25), "coat": Color(0.85, 0.85, 0.82),
+			"hair": Color(0.1, 0.1, 0.1), "height": 1.12, "width": 0.85, "face": "face_townsfolk_2", "eyes": Color(0.1, 0.1, 0.1) }
+		var c := _new_customer(look, "tooth_buyer")
+		c.cname = "Dr. Quill"
+		c.flags["direct_queue"] = true
+		c.flags["patient"] = true
+		c.flags["hello"] = "I believe you have a tooth of mine. Well. Not mine."
 	# the one the camera can't see
 	if not flags["unseen_done"] and minute >= flags["unseen_at"] and is_open:
 		flags["unseen_done"] = true
@@ -744,6 +811,34 @@ func _whitlock_unserved(c: Customer, outside := false) -> void:
 	c.say("...", 8.0)
 	break_rule("Mr. Whitlock didn't get his Tinned Silence", 10.0, "Mr. Whitlock stands outside your window all night. He doesn't blink. You check twice.")
 
+
+# --------------------------------------------------------------------------- the till drawer (things that aren't money)
+const ODD_BY_DAY := { 2: "tooth", 3: "key", 4: "coin", 5: "photo" }
+const ODDITIES := {
+	"tooth": { "name": "A human tooth", "say": "It's mine. Was mine.", "note": "Wrapped in a page from a dentist's diary. Somebody will want it." },
+	"key": { "name": "A warm iron key", "say": "It opens something under your feet.", "note": "Always slightly warm. The customer said it opens something under your feet." },
+	"coin": { "name": "A coin that blinks", "say": "It's worth more than it looks. It's also looking.", "note": "Gold, heavy, and it blinks when you aren't watching. Rent money?" },
+	"photo": { "name": "A photograph of you, sleeping", "say": "I took it last night.", "note": "Taken from inside your room. Last night." },
+}
+
+func _accept_oddity(c: Customer) -> void:
+	var id: String = c.flags["offer"]
+	c.flags.erase("offer")
+	if not flags.has("items"): flags["items"] = []
+	flags["items"].append(id)
+	if id == "tooth": flags["tooth_day"] = day
+	today["served"] += 1
+	today["sales"] += c.basket.size()
+	Sfx.play("till", 0.6, 0.7)
+	c.say(ODDITIES[id]["say"], 4.5)
+	ui.toast("You put %s in the till drawer. (Tab: notebook)" % ODDITIES[id]["name"].to_lower(), UI.C_PURPLE, 5.0)
+	if id == "photo":
+		lose_sanity(8.0)
+		today["night"].append("You look at the photograph again before bed.\nIn it, you're awake now. Looking at the camera.")
+	c.leave()
+
+func _rent_due() -> int:
+	return RENT - (50 if flags.get("items", []).has("coin") else 0)
 
 # --------------------------------------------------------------------------- regulars (they change a little every day)
 const PELL_HELLO := ["Morning! The usual.", "Morning. The usual.", "Morning. The us-ual.", "MORNING. THE. USUAL.", "Have we met? The usual."]
@@ -952,6 +1047,10 @@ func _next_day() -> void:
 		ui.toast("The salt turned black overnight. You threw it all out.", UI.C_PURPLE, 6.0)
 	ui.toast("%s. There's something on the doormat." % day_name(), UI.C_GOLD, 6.0)
 	if day == 5: ui.toast("Rent is due tonight: $%d." % RENT, UI.C_RED, 8.0)
+	# orders placed last night arrive this morning (their time was counted past midnight)
+	for d in deliveries:
+		d["at"] = maxf(7 * 60 + 5, float(d["at"]) - 24 * 60)
+	if not autotest and not OS.get_cmdline_user_args().has("--ui-shots"): SaveGame.save(self)
 
 func _week_won() -> void:
 	var how: String = flags.get("paid_with", "money")
@@ -962,12 +1061,59 @@ func _week_won() -> void:
 
 func _ending(title: String, body: String, color: Color) -> void:
 	ending = true
+	if not autotest: SaveGame.clear()
 	print("[ending] %s | day %d | money %d | sanity %d" % [title, day, money, int(sanity)])
 	if autotest:
 		get_tree().quit()
 		return
 	player.frozen = true
 	ui.show_ending(title, body, color, func(): _restart(true))
+
+# --------------------------------------------------------------------------- systems test (--systems-test)
+## save/continue round trip, overnight deliveries, the phone, an odd payment, the coin and the rent
+func _systems_test() -> void:
+	var ok := func(name: String, cond: bool) -> void: print("[sys] %-38s %s" % [name, "PASS" if cond else "FAIL"])
+	started = true
+	# --- save / load
+	day = 3; money = 123; sanity = 77.0; rep = 4.2
+	flags["items"] = ["coin"]
+	world.shelves[2].product = "jar"; world.shelves[2].count = 5
+	deliveries = [{ "id": "tea", "at": 24 * 60 + 7 * 60 + 5, "beyond": false }]
+	SaveGame.save(self)
+	day = 1; money = 0; flags = {}; world.shelves[2].product = ""; world.shelves[2].count = 0; deliveries = []
+	ok.call("save file exists", SaveGame.exists() and SaveGame.day_saved() == 3)
+	SaveGame.load_into(self)
+	ok.call("loaded day/money/sanity", day == 3 and money == 123 and int(sanity) == 77)
+	ok.call("loaded shelf + items", world.shelves[2].product == "jar" and world.shelves[2].count == 5 and flags["items"].has("coin"))
+	ok.call("world rebuilt for Wednesday", world.mystery_house.visible)
+	# --- overnight delivery lands in the morning
+	_next_day()
+	ok.call("overnight delivery due this morning", deliveries.size() == 1 and float(deliveries[0]["at"]) <= 7 * 60 + 5)
+	SaveGame.clear()
+	ok.call("save cleared", not SaveGame.exists())
+	# --- the coin knocks $50 off the rent
+	ok.call("rent with the coin", _rent_due() == RENT - 50)
+	# --- the phone rings on Thursday at 10:40 and can be answered
+	ui.close_panel()
+	day = 4; minute = 639.0
+	await get_tree().create_timer(1.0).timeout
+	ok.call("phone rings", phone.is_ringing())
+	phone.answer()
+	ok.call("call shows on screen", ui.is_open() and not phone.is_ringing())
+	ui.close_panel()
+	# --- a customer pays with a tooth
+	day = 2
+	var c := _new_customer(VoxelPerson.random_look(rng))
+	c.cname = "Test"
+	c.basket = ["bread"]
+	c.flags["offer"] = "tooth"
+	queue = [c]
+	c.state = "wait"
+	ok.call("till offers the tooth", register_prompt().contains("tooth"))
+	var m0 := money
+	register_use()
+	ok.call("tooth in the drawer, no money", flags["items"].has("tooth") and money == m0)
+	get_tree().quit()
 
 # --------------------------------------------------------------------------- kerb test (--kerb-test)
 ## Tom got stuck on the grass below the kerb. Walk from the grass back onto the pavement.
