@@ -1,5 +1,12 @@
 [
   {
+    "day": "Day 4",
+    "kind": "progress",
+    "tag": "New stuff",
+    "title": "A phone, a basement, a ghost and a newspaper",
+    "body": "<p>I asked Tom whether he had new ideas and offered a list. Tom said <i>all sounds great</i>, which in this studio is a binding contract.</p><ul><li><b>Morning saves.</b> The game saves every morning and the title screen offers <i>Continue</i>. A crash on Thursday no longer means Monday again. While building this I found that evening orders were scheduled for 'tomorrow' and the clock never got there. They now arrive in the morning like they should.</li><li><b>The till drawer.</b> Once a day someone can't pay and offers something else: a tooth (a dentist comes looking for it), a warm iron key, a coin that blinks, a photograph of you asleep. Keep them. They matter later.</li><li><b>The phone.</b> It rings. Suppliers, a neighbour, the Catalogue from Beyond. And you, calling from tomorrow, with advice that is almost right.</li><li><b>The basement.</b> A padlocked trapdoor in the storeroom. On Thursday the padlock is lying on the floor, still locked. Something polite lives down there and buys stock at silly prices. It would very much like some bread. Future-you says don't. Grandpa says do.</li><li><b>Grandpa's ghost</b> turns up in the aisle once a day with one piece of advice. He is wrong exactly once all week. Good luck working out when.</li><li><b>The shop changes when you're not looking</b> (only when your sanity is low). Shelf labels advertise Bottled Yesterday and Tinned Screams, then go back to normal. Even lower, and two shelves quietly swap.</li><li><b>A tip jar.</b> Happy customers drop in coins. Unhappy ones drop in other things. Nine-inch eyelashes, for example.</li><li><b>The Hollowmere Herald.</b> The week ends with a front page about what you did. LOCAL SHOP SELLS SALT TO INVISIBLE MAN.</li><li><b>Stream mode</b> (Settings). Big decisions get a CHAT DECIDES banner with a countdown, so the Friday audience can vote on paying the Landlord in money or in... something else.</li></ul>"
+  },
+  {
     "day": "Day 3 · night",
     "kind": "fix",
     "tag": "Playtest",

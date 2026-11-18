@@ -46,6 +46,13 @@ sanity above zero.
 - Settings (title screen and pause menu, saved to `user://settings.cfg`): volume, mouse sensitivity,
   letter voices, fullscreen, and stackable screen effects (all in `scripts/sanity.gdshader`):
   film grain (on by default), VHS tape, CRT scanlines, retro pixels. The sanity distortion sits on top.
+- Week systems, one script each: `save_game.gd` (morning save + Continue), `phone.gd` (calls;
+  optional voice lines at `src/assets/voice/call_<id>.ogg`, ids 1-8 in `Phone.CALLS`),
+  `basement.gd` (the trapdoor and the Thing Below), `tip_jar.gd`, `haunting.gd` (Grandpa's daily
+  ghost, shelves that change when unobserved at low sanity). Odd payments and the Saturday newspaper
+  live in `main.gd`. Stream mode (Settings) shows a CHAT DECIDES banner at big decisions.
+- `godot --path src -- --systems-test` checks save/load, deliveries, phone, odd payments, tip jar,
+  basement, ghost, shifting shelves, newspaper and the chat banner in a few seconds.
 - `scripts/guide.gd` works out "what should I do now?" from the game state every frame: the
   objective line on the HUD, the bouncing arrow (days 1-2), the glowing shelf for the box you carry,
   and the list of deliveries on their way.

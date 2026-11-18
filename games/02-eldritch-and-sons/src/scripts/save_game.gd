@@ -31,6 +31,7 @@ static func save(g) -> void:
 	cf.set_value("save", "flags", g.flags)
 	cf.set_value("save", "deliveries", g.deliveries)
 	cf.set_value("save", "crate_slot", g.crate_slot)
+	cf.set_value("save", "tips", g.tip_jar.tips)
 	var shelves := []
 	for s in g.world.shelves: shelves.append([s.product, s.count])
 	cf.set_value("save", "shelves", shelves)
@@ -53,6 +54,8 @@ static func load_into(g) -> bool:
 	g.flags = cf.get_value("save", "flags", {})
 	g.deliveries = cf.get_value("save", "deliveries", [])
 	g.crate_slot = int(cf.get_value("save", "crate_slot", 0))
+	g.tip_jar.tips = int(cf.get_value("save", "tips", 0))
+	g.tip_jar._refresh()
 	var shelves: Array = cf.get_value("save", "shelves", [])
 	for i in mini(shelves.size(), g.world.shelves.size()):
 		g.world.shelves[i].product = shelves[i][0]

@@ -10,6 +10,7 @@ var items_node: Node3D
 var sign_label: Label3D
 var index := 0
 var highlight := false
+var fake := ""                 # haunting.gd: a label for something that doesn't exist
 var _hl_t := 0.0
 
 func build(idx: int) -> void:
@@ -52,7 +53,15 @@ func _process(dt: float) -> void:
 		_hl_t += dt
 		sign_label.modulate = Color(0.45, 1, 0.5).lerp(Color(0.85, 1, 0.85), 0.5 + 0.5 * sin(_hl_t * 6.0))
 
+func set_fake(text: String) -> void:
+	fake = text
+	_sign()
+
 func _sign() -> void:
+	if fake != "":
+		sign_label.text = fake
+		sign_label.modulate = Color(0.85, 0.6, 1.0)
+		return
 	if product == "":
 		sign_label.text = "(empty shelf)"
 		sign_label.modulate = Color(0.7, 0.7, 0.7)

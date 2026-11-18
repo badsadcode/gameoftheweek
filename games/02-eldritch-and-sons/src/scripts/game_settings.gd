@@ -13,6 +13,7 @@ static var data := {
 	"fx_vhs": false,      # wobbly old tape
 	"fx_crt": false,      # scanlines + rounded vignette
 	"fx_pixels": false,   # chunky low-res render
+	"stream": false,      # stream mode: "CHAT DECIDES" banners at big decisions
 }
 
 const LABELS := {

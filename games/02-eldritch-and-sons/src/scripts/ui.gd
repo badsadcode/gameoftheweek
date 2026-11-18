@@ -18,6 +18,9 @@ var crosshair: Label
 var toast_box: VBoxContainer
 var held_label: Label
 var goal_label: Label
+var vote_box: PanelContainer   # stream mode: "CHAT DECIDES" banner
+var vote_label: Label
+var vote_t := 0.0
 var deliv_label: Label
 var panel_layer: Control
 var open_panel: Control = null
@@ -55,6 +58,7 @@ func setup(g) -> void:
 	panel_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel_layer)
+	add_child(vote_box)   # the chat banner sits above dialogues
 	fade = ColorRect.new()
 	fade.color = Color(0, 0, 0, 0)
 	fade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -176,6 +180,17 @@ func _build_hud() -> void:
 	hint.position = Vector2(-300, -34)
 	hud.add_child(hint)
 
+	vote_box = PanelContainer.new()
+	vote_box.add_theme_stylebox_override("panel", box_style(Color(0.12, 0.03, 0.16, 0.92), C_PURPLE))
+	vote_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	vote_box.position = Vector2(-300, 14)
+	vote_box.custom_minimum_size = Vector2(600, 0)
+	vote_box.visible = false
+	vote_box.mouse_filter = Control.MOUSE_FILTER_IGNORE   # added on top of panels in setup()
+	vote_label = lbl("", 24, C_TEXT)
+	vote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vote_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vote_box.add_child(vote_label)
 	toast_box = VBoxContainer.new()
 	toast_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	toast_box.position = Vector2(-310, 110)
@@ -206,6 +221,23 @@ func update_hud() -> void:
 	sm.set_shader_parameter("time", Time.get_ticks_msec() / 1000.0)
 	for fx in ["grain", "vhs", "crt", "pixels"]:
 		sm.set_shader_parameter(fx, 1.0 if GameSettings.data["fx_" + fx] else 0.0)
+
+## stream mode: a big banner so chat can vote on a decision (purely a prompt; nothing is read from chat)
+var _vote_text := ""
+func chat_vote(question: String, a: String, b: String, secs := 30.0) -> void:
+	_vote_text = "CHAT DECIDES!\n%s\n[1] %s     or     [2] %s" % [question, a, b]
+	vote_t = secs
+	vote_box.visible = true
+	Sfx.play("good", 0.5, 0.8)
+
+func _process(dt: float) -> void:
+	toast_box.position.y = 190.0 if vote_box.visible else 110.0
+	if vote_t > 0.0:
+		vote_t -= dt
+		vote_label.text = _vote_text + ("\nVote in chat: %d" % ceili(vote_t))
+		if vote_t <= 0.0:
+			vote_label.text = _vote_text.replace("CHAT DECIDES!", "CHAT HAS DECIDED.")
+			get_tree().create_timer(4.0).timeout.connect(func(): if vote_t <= 0.0: vote_box.visible = false)
 
 func toast(text: String, color := C_TEXT, dur := 4.0) -> void:
 	var l := lbl(text, 22, color)
@@ -436,6 +468,58 @@ func show_pause(on_title: Callable) -> void:
 		on_title.call(), 22))
 	_show(p)
 
+## a dialogue with buttons. options: [[label, Callable, color?], ...]
+func show_choice(title: String, body: String, options: Array, border := C_PURPLE) -> void:
+	var p := panel(720, 0, border)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	p.add_child(v)
+	v.add_child(lbl(title, 30, border))
+	var b := lbl(body, 24, Color(0.92, 0.9, 0.84), mono)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.custom_minimum_size = Vector2(660, 0)
+	v.add_child(b)
+	for o in options:
+		var cb: Callable = o[1]
+		v.add_child(button(o[0], func():
+			close_panel()
+			cb.call(), 20, o[2] if o.size() > 2 else C_TEXT))
+	_show(p)
+
+## the end-of-week front page. stories: [headline, body] pairs; the first is the big one
+func show_newspaper(stories: Array, on_done: Callable) -> void:
+	var paper := Color(0.86, 0.82, 0.72)
+	var ink := Color(0.12, 0.1, 0.08)
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", box_style(paper, Color(0.4, 0.35, 0.28)))
+	p.custom_minimum_size = Vector2(860, 0)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	p.add_child(v)
+	var mast := lbl("THE HOLLOWMERE HERALD", 46, ink)
+	mast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(mast)
+	var date := lbl("Saturday edition  ·  One penny  ·  Weather: fog, continuing", 18, Color(0.3, 0.27, 0.22), mono)
+	date.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(date)
+	var rule := ColorRect.new()
+	rule.color = ink
+	rule.custom_minimum_size = Vector2(0, 3)
+	v.add_child(rule)
+	for i in stories.size():
+		var head := lbl(stories[i][0], 34 if i == 0 else 22, ink)
+		head.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		head.custom_minimum_size = Vector2(820, 0)
+		v.add_child(head)
+		var body := lbl(stories[i][1], 20 if i == 0 else 18, Color(0.22, 0.2, 0.17), mono)
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.custom_minimum_size = Vector2(820, 0)
+		v.add_child(body)
+	v.add_child(button("Turn the page", func():
+		close_panel()
+		on_done.call(), 22, C_GOLD))
+	_show(p)
+
 func show_ending(title: String, body: String, color: Color, on_again: Callable) -> void:
 	var p := panel(760, 480, color)
 	var v := VBoxContainer.new()
@@ -494,6 +578,7 @@ func show_settings(on_back: Callable) -> void:
 	_slider_row(v, "mouse", "Mouse sensitivity", 1, 10)
 	_toggle_row(v, "voices", "Letter voices")
 	if not OS.has_feature("web"): _toggle_row(v, "fullscreen", "Fullscreen")
+	_toggle_row(v, "stream", "Stream mode (chat decides)")
 	v.add_child(lbl("SCREEN EFFECTS", 22, C_PURPLE))
 	for key in ["fx_grain", "fx_vhs", "fx_crt", "fx_pixels"]:
 		_toggle_row(v, key, GameSettings.LABELS[key])

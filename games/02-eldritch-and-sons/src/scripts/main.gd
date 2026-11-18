@@ -53,6 +53,9 @@ var voice: AudioStreamPlayer   # voiced letters (recorded by Tom with ElevenLabs
 var ending := false
 var guide: Guide
 var phone: Phone
+var basement: Basement
+var tip_jar: TipJar
+var haunting: Haunting
 var night_walk := false        # the interactive 3 AM walk (Wednesday night)
 var walk_lines: Array = []
 var walk_t := 0.0
@@ -82,6 +85,15 @@ func _ready() -> void:
 	phone = Phone.new()
 	add_child(phone)
 	phone.build(self)
+	basement = Basement.new()
+	add_child(basement)
+	basement.build(self)
+	tip_jar = TipJar.new()
+	add_child(tip_jar)
+	tip_jar.build(self)
+	haunting = Haunting.new()
+	add_child(haunting)
+	haunting.setup(self)
 	hum = Sfx.loop("hum", 0.18)
 	voice = AudioStreamPlayer.new()
 	add_child(voice)
@@ -232,6 +244,7 @@ func _process(dt: float) -> void:
 	if minute >= 26 * 60 and not ending:
 		ui.toast("You fall asleep standing behind the counter...", UI.C_PURPLE)
 		_end_day(true)
+	_chat_votes()
 	if autotest: _bot(dt)
 
 func day_name() -> String:
@@ -298,6 +311,8 @@ func change_rep(d: float) -> void:
 
 func break_rule(text: String, sanity_cost: float, night_line := "") -> void:
 	today["broken"].append(text)
+	if not flags.has("broken_log"): flags["broken_log"] = []
+	flags["broken_log"].append(text)
 	Sfx.play("wrong", 0.9)
 	Sfx.play("drone", 0.6)
 	lose_sanity(sanity_cost, "Something feels wrong. (" + text + ")")
@@ -305,6 +320,8 @@ func break_rule(text: String, sanity_cost: float, night_line := "") -> void:
 
 func keep_rule(text: String) -> void:
 	today["kept"].append(text)
+	if not flags.has("kept_log"): flags["kept_log"] = []
+	flags["kept_log"].append(text)
 	sanity = minf(100.0, sanity + 3.0)
 	Sfx.play("good", 0.6)
 
@@ -524,6 +541,7 @@ func on_left_empty(c: Customer) -> void:
 		today["angry"] += 1
 
 func on_impatient(c: Customer) -> void:
+	if rng.randf() < 0.3: tip_jar.add_odd(rng)
 	change_rep(-0.25)
 	today["angry"] += 1
 	ui.toast("%s got tired of waiting at the till." % c.cname, UI.C_RED)
@@ -644,6 +662,7 @@ func register_use() -> void:
 	else:
 		c.say(["Thanks!", "Lovely.", "Ta.", "Bless you.", "Mm."][rng.randi() % 5], 2.5)
 	_pop_money(total)
+	if c.kind == "normal" and rng.randf() < 0.3: tip_jar.add_tip(rng.randi_range(1, 2))
 	money += total
 	today["income"] += total
 	today["served"] += 1
@@ -670,6 +689,7 @@ func register_refuse() -> void:
 		"landlord":
 			flags["rent_paid"] = true
 			flags["paid_with"] = "sanity"
+			if GameSettings.data["stream"]: ui.toast("Chat has spoken.", UI.C_PURPLE)
 			c.say("...ACCEPTABLE.", 5.0)
 			lose_sanity(45.0, "He takes something from you. You can't remember what it was.")
 			c.leave()
@@ -699,6 +719,7 @@ func register_refuse() -> void:
 		return
 	change_rep(-0.2)
 	today["angry"] += 1
+	if rng.randf() < 0.3: tip_jar.add_odd(rng)
 	c.leave("How rude!")
 
 # --------------------------------------------------------------------------- strange customers
@@ -839,6 +860,70 @@ func _accept_oddity(c: Customer) -> void:
 
 func _rent_due() -> int:
 	return RENT - (50 if flags.get("items", []).has("coin") else 0)
+
+# --------------------------------------------------------------------------- stream mode
+## big decisions at the till get a "CHAT DECIDES" banner (once per customer)
+func _chat_votes() -> void:
+	if not GameSettings.data["stream"]: return
+	var c := _front()
+	if c == null or c.flags.get("voted", false): return
+	var q := ""
+	var a := ""
+	var b := ""
+	if c.flags.has("offer"):
+		q = "%s offers %s instead of money." % [c.cname, ODDITIES[c.flags["offer"]]["name"].to_lower()]
+		a = "Take it"; b = "Insist on money"
+	elif c.kind == "landlord":
+		q = "The Landlord wants the rent."
+		a = "Pay in money"; b = "Pay in... something else"
+	elif c.kind == "returner":
+		q = "Mrs. Thorne wants a refund for something she hasn't bought yet."
+		a = "Refund her"; b = "Refuse"
+	elif c.kind == "unseen" and c.basket.has("salt"):
+		q = "Someone the camera can't see wants salt."
+		a = "Sell it"; b = "Refuse"
+	elif c.basket.has("jar") and minute >= SUNSET:
+		q = "A Whispering Jar, after sunset."
+		a = "Sell it"; b = "Refuse"
+	if q == "": return
+	c.flags["voted"] = true
+	ui.chat_vote(q, a, b)
+
+# --------------------------------------------------------------------------- the Saturday paper
+func _newspaper(title: String) -> Array:
+	var broken: Array = flags.get("broken_log", [])
+	var kept: Array = flags.get("kept_log", [])
+	var has_broken := func(word: String) -> bool:
+		for b in broken:
+			if word.to_lower() in String(b).to_lower(): return true
+		return false
+	var stories := []
+	# the headline: the most remarkable thing that happened
+	if title == "EVICTED":
+		stories.append(["SHOP UNDER NEW MANAGEMENT. AGAIN.", "Nobody in Hollowmere remembers the previous owner. \"There was a previous owner?\" asked everyone."])
+	elif title == "WHO RUNS THE SHOP NOW?":
+		stories.append(["SHOPKEEPER \"NEVER HAPPIER\", SAYS SHOPKEEPER", "Customers report the new owner of Eldritch & Sons smiles at all times, including while asleep, which is also all times."])
+	elif flags.get("paid_with", "") == "sanity":
+		stories.append(["LANDLORD PAID IN \"SOMETHING\"; SHOPKEEPER CANNOT SAY WHAT", "\"It was adequate,\" said the Landlord, from inside a shadow that wasn't there a moment ago."])
+	elif has_broken.call("camera"):
+		stories.append(["LOCAL SHOP SELLS SALT TO INVISIBLE MAN", "\"He seemed nice,\" said the shopkeeper, pointing at nothing. All the salt in the shop has since turned black."])
+	elif flags.get("bread_below", false):
+		stories.append(["SOMETHING UNDER ELDRITCH & SONS \"VERY FOND OF BREAD\"", "Floorboards thinner than last week. Local bakers delighted. Local floorboards less so."])
+	elif int(flags.get("whitlock_served", 0)) >= 5:
+		stories.append(["MAN RECEIVES SILENCE FIVE NIGHTS RUNNING", "\"...\" said Mr. Whitlock. \"...\" added Mr. Whitlock."])
+	else:
+		stories.append(["NEW OWNER SURVIVES FIRST WEEK", "Eldritch & Sons stays open. The town is relieved, mostly. The rent was paid in actual money, which the Landlord described as \"adequate\"."])
+	# the rest of the page
+	if day >= 4: stories.append(["Woman's House Boarded Up From The Inside", "Neighbours \"not surprised\". Agnes unavailable for comment, or anything."])
+	stories.append(["Man Buys Bread And Milk, Again", "Mr. Pell, who has bought bread and milk every morning for ninety years, says he is \"the same as always\". He has more arms than last week."])
+	if has_broken.call("jar"): stories.append(["Jars Heard Whispering Until Dawn", "Residents ask that Whispering Jars be sold in daylight, as is traditional."])
+	if has_broken.call("refund"): stories.append(["Pensioner's Laugh Heard In Stairwells Citywide", "Hollowmere has no stairwells."])
+	if flags.get("tooth_buyer_done", false) and not flags.get("items", []).has("tooth"): stories.append(["Dentist Recovers Lost Tooth", "Dr. Quill: \"It was not mine, and I could not be happier.\""])
+	if flags.get("below_slammed", false): stories.append(["Trapdoor Slammed; Something \"Remembers\"", "It has asked us to print that it is not angry. Just disappointed."])
+	if day >= 3: stories.append(["Building Appears On Empty Lot Overnight", "Planning office: \"We approved it. We think. Nobody remembers the meeting.\""])
+	stories = stories.slice(0, 4)
+	stories.append(["CLASSIFIEDS", "WANTED: Tinned Silence, any quantity. LOST: one shadow, answers to nothing. FOR SALE: lot, empty (not any more). Rules kept this week: %d. Rules broken: %d." % [kept.size(), broken.size()]])
+	return stories
 
 # --------------------------------------------------------------------------- regulars (they change a little every day)
 const PELL_HELLO := ["Morning! The usual.", "Morning. The usual.", "Morning. The us-ual.", "MORNING. THE. USUAL.", "Have we met? The usual."]
@@ -1028,6 +1113,8 @@ func _next_day() -> void:
 	world.letter.visible = true
 	world.letter.process_mode = Node.PROCESS_MODE_INHERIT
 	if day == 3: world.show_mystery_house()
+	if day == 4 and not flags.get("basement_unlocked", false):
+		ui.toast("The padlock on the storeroom trapdoor is lying on the floor. Still locked.", UI.C_PURPLE, 7.0)
 	if day == 4:
 		world.board_up_agnes()
 		ui.toast("Agnes's house across the street is boarded up. From the inside.", UI.C_PURPLE, 7.0)
@@ -1067,7 +1154,7 @@ func _ending(title: String, body: String, color: Color) -> void:
 		get_tree().quit()
 		return
 	player.frozen = true
-	ui.show_ending(title, body, color, func(): _restart(true))
+	ui.show_newspaper(_newspaper(title), func(): ui.show_ending(title, body, color, func(): _restart(true)))
 
 # --------------------------------------------------------------------------- systems test (--systems-test)
 ## save/continue round trip, overnight deliveries, the phone, an odd payment, the coin and the rent
@@ -1113,6 +1200,57 @@ func _systems_test() -> void:
 	var m0 := money
 	register_use()
 	ok.call("tooth in the drawer, no money", flags["items"].has("tooth") and money == m0)
+	# --- tip jar
+	tip_jar.add_tip(3)
+	var m1 := money
+	tip_jar.empty()
+	ok.call("tip jar empties into the till", money == m1 + 3 and tip_jar.tips == 0)
+	# --- the basement: locked on Tuesday, open with the key, sells bread on Thursday
+	day = 2
+	ok.call("trapdoor locked on Tuesday", not basement.unlocked())
+	flags["items"].append("key")
+	basement.use(self)
+	ok.call("warm key unlocks it", basement.unlocked() and not flags["items"].has("key"))
+	day = 4
+	world.shelves[0].product = "bread"; world.shelves[0].count = 6
+	basement.use(self)
+	await get_tree().create_timer(1.0).timeout
+	ok.call("Thing Below asks (dialogue open)", ui.is_open())
+	ui.close_panel()
+	await get_tree().create_timer(0.6).timeout
+	ok.call("lid shuts after Esc", basement.open_t == 0.0)
+	ok.call("once a day", basement.prompt(self).contains("resting"))
+	# --- Grandpa appears and can be listened to
+	day = 3; minute = 16 * 60 - 1
+	haunting.ghost_day = 0
+	await get_tree().create_timer(0.5).timeout
+	ok.call("Grandpa appears", haunting.ghost != null)
+	haunting.use(self)
+	ok.call("Grandpa gives his hint", ui.is_open() and haunting.ghost == null)
+	ui.close_panel()
+	# --- low sanity: an unseen shelf changes its label, then changes back
+	sanity = 20.0
+	player.global_position = Vector3(0, 0, 3.0)
+	player.rotation.y = PI          # looking at the street: every shelf is behind you
+	haunting.shift_t = 0.0
+	await get_tree().create_timer(0.3).timeout
+	var faked: Array = world.shelves.filter(func(sh): return sh.fake != "")
+	ok.call("an unseen shelf lies", faked.size() == 1)
+	# --- the newspaper
+	flags["broken_log"] = ["Sold salt to someone the camera couldn't see"]
+	var paper := _newspaper("OPEN FOR BUSINESS")
+	ok.call("newspaper headline", paper[0][0] == "LOCAL SHOP SELLS SALT TO INVISIBLE MAN" and paper.back()[0] == "CLASSIFIEDS")
+	ui.show_newspaper(paper, func(): pass)
+	ok.call("newspaper shows", ui.is_open())
+	ui.close_panel()
+	# --- stream mode banner
+	GameSettings.data["stream"] = true
+	var lc := _new_customer(VoxelPerson.random_look(rng), "landlord")
+	queue = [lc]
+	lc.state = "wait"
+	_chat_votes()
+	ok.call("chat vote banner", ui.vote_box.visible and lc.flags.get("voted", false))
+	GameSettings.data["stream"] = false
 	get_tree().quit()
 
 # --------------------------------------------------------------------------- kerb test (--kerb-test)
@@ -1323,6 +1461,51 @@ func _ui_shots() -> void:
 	await snap.call("door_open")
 	customers.erase(visitor)
 	visitor.queue_free()
+	# batch B: the phone ringing + tip jar, from behind the counter
+	day = 2
+	minute = 11 * 60 + 30
+	_apply_time_of_day()
+	tip_jar.add_tip(9)
+	player.global_position = Vector3(-5.2, 0, 0.4)
+	player.rotation.y = PI / 2 + 0.35
+	player.cam.rotation.x = -0.2
+	await get_tree().create_timer(0.5).timeout
+	await snap.call("phone")
+	ui.close_panel()
+	# Grandpa in the aisle
+	day = 3
+	minute = 16 * 60 - 1
+	haunting.ghost_day = 0
+	await get_tree().create_timer(0.2).timeout
+	player.global_position = Vector3(0.0, 0, 1.6)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = -0.08
+	await snap.call("grandpa")
+	haunting._vanish(false)
+	# the trapdoor, open, and the Thing Below's offer (stream mode on for the banner)
+	day = 4
+	minute = 15 * 60
+	_apply_time_of_day()
+	world.shelves[0].product = "bread"; world.shelves[0].count = 8; world.shelves[0].refresh()
+	player.global_position = Vector3(-1.5, 0, -5.6)
+	player.rotation.y = 0.0
+	player.cam.rotation.x = -0.75
+	GameSettings.data["stream"] = true
+	basement.use(self)
+	await get_tree().create_timer(1.0).timeout
+	await snap.call("basement")
+	ui.close_panel()
+	GameSettings.data["stream"] = false
+	ui.vote_box.visible = false
+	ui.vote_t = 0.0
+	# the Saturday paper
+	flags["broken_log"] = ["Sold a Whispering Jar after sunset"]
+	flags["kept_log"] = ["a", "b", "c", "d", "e", "f", "g"]
+	flags["whitlock_served"] = 5
+	day = 5
+	ui.show_newspaper(_newspaper("OPEN FOR BUSINESS"), func(): pass)
+	await snap.call("newspaper")
+	ui.close_panel()
 	# screen effects, one at a time, in the shop by day
 	sanity = 100.0
 	minute = 11 * 60
