@@ -447,7 +447,7 @@ func show_title(on_start: Callable, on_continue := Callable()) -> void:
 		on_start.call(), 28 if not on_continue.is_valid() else 22, C_GOLD if not on_continue.is_valid() else C_TEXT))
 	v.add_child(button("Settings", func(): show_settings(func(): show_title(on_start, on_continue)), 22))
 	v.add_child(button("Quit", func(): get_tree().quit(), 22))
-	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 2\nLetters voiced by Tom (made with ElevenLabs)", 16, Color(0.6, 0.6, 0.7))
+	var c := lbl("Bad Ideas Works  ·  Games of the Week  ·  Week 1\nLetters voiced by Tom (made with ElevenLabs)", 16, Color(0.6, 0.6, 0.7))
 	c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(c)
 	_show(p)

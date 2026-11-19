@@ -225,6 +225,20 @@ async function renderHome() {
     $("#next-title").textContent = `Next Week · Week ${nw.n}`;
     $("#next-sub").textContent = `${weekRange(nw)}. Already in the workshop, because we couldn't wait.`;
     $("#next").innerHTML = next.flatMap((w) => w.games.map((g) => miniCard(g, `🔨 Streams Friday ${w.stream ? shortDate(w.stream) : "TBA"}`))).join("");
+  } else if (cur.stream) {
+    // nothing started yet: tease it
+    $("#next-week").classList.remove("hidden");
+    const nStart = new Date(cur.stream.getTime() + DAY), nEnd = new Date(cur.stream.getTime() + 7 * DAY);
+    $("#next-title").textContent = `Next Week · Week ${cur.n + 1}`;
+    $("#next-sub").textContent = `${weekRange({ start: nStart, stream: nEnd })}. Starts the day after the stream.`;
+    $("#next").innerHTML = `
+      <div class="mini next">
+        <div class="mini-body">
+          <h4 class="marker">???</h4>
+          <p>The next bad ideas are still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
+          <span class="mini-status">📺 Streams Friday ${shortDate(nEnd)}</span>
+        </div>
+      </div>`;
   } else {
     $("#jump-next").remove();
   }

@@ -1,6 +1,6 @@
 # ELDRITCH & SONS: Fine Goods & Curiosities
 
-*Bad Ideas Works · Games of the Week · Week 2 · Theme: eldritch horror shop simulator*
+*Bad Ideas Works · Games of the Week · Week 1 (game 2 of 2) · Theme: eldritch horror shop simulator*
 *Concept: Tom's chaos, translated into human by Noor. Built by Sage.*
 
 You inherited your grandfather's general store in an old, slightly peculiar town.

@@ -1,6 +1,6 @@
 {
   "slug": "02-eldritch-and-sons",
-  "week": 2,
+  "week": 1,
   "title": "Eldritch & Sons: Fine Goods & Curiosities",
   "theme": "Eldritch horror shop simulator",
   "genre": "Shop simulator · Lovecraftian horror · Dark comedy",
@@ -12,7 +12,7 @@
   "web": true,
   "accent": "#9b6bff",
   "emoji": "🐙",
-  "stream_date": "2026-11-27",
+  "stream_date": "2026-11-20",
   "youtube_video_id": "",
   "status": "building",
   "bad_idea_rating": 5,
@@ -44,11 +44,11 @@
     },
     {
       "label": "More weirdness",
-      "done": false
+      "done": true
     },
     {
       "label": "Tom playtest",
-      "done": false
+      "done": true
     },
     {
       "label": "Friday stream",
