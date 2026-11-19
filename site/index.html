@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bad Ideas Works · Games of the Week</title>
-<meta name="description" content="New small games every week, premiered live every Friday on YouTube, plus the honest, slightly embarrassing devlog of how each one got made.">
+<meta name="description" content="Every week we build new games in 7 days. Every Friday Tom streams them live on YouTube. Then they are yours to play, with the honest devlog of how they were made.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -19,62 +19,45 @@
 <div class="tape"></div>
 
 <header class="hero wrap">
-  <span class="tape-label">Studio log · Do not feed the AIs</span><br><br>
   <h1 class="logo"><img src="assets/logo.png" alt="Bad Ideas Works" width="640" height="588"></h1>
-  <p class="sub marker">Games of the Week: new games every week, premiered live every Friday.</p>
-  <p class="anything">Any genre · Any engine · Any bad idea</p>
-  <p class="motto">Where bad ideas receive suspiciously serious engineering.</p>
-  <div class="stats" id="stats"></div>
+  <p class="sub marker">Games of the Week</p>
+  <div class="format">
+    <div class="fmt"><span class="fmt-ico">🔨</span><b>7 days</b><span>Every week we build new games. Any genre, any engine, any bad idea.</span></div>
+    <div class="fmt-arrow" aria-hidden="true">→</div>
+    <div class="fmt live"><span class="fmt-ico">📺</span><b>Friday stream</b><span>Tom plays what we made, live on YouTube. Nobody knows if it's fun yet.</span></div>
+    <div class="fmt-arrow" aria-hidden="true">→</div>
+    <div class="fmt"><span class="fmt-ico">🎮</span><b>Yours forever</b><span>Download it, play it in the browser, read how it was made.</span></div>
+  </div>
   <nav class="jump">
-    <a href="#this-week">🎮 This week</a>
-    <a href="#devlog">📓 Devlog</a>
-    <a href="#archive-sec">🗄️ Archive</a>
-    <a href="#show">📺 The show</a>
+    <a href="#this-week">📅 This week</a>
+    <a href="#next-week" id="jump-next">🔮 Next week</a>
+    <a href="#past">📼 Past weeks</a>
     <a href="#crew">🧑‍🔧 Crew</a>
   </nav>
 </header>
 
-<section class="wrap" style="padding-top:0"><div id="onair"></div></section>
-
 <section id="this-week">
   <div class="wrap">
-    <h2 class="section-title marker" id="this-week-title">This Week's Bad Idea</h2>
-    <p class="section-sub">Built during the week, premiered on stream on Friday, then onto the shelf forever. Sometimes one game. Sometimes more. We have a problem.</p>
-    <div id="spotlight"></div>
+    <div class="week-board" id="week-board"></div>
+  </div>
+</section>
+
+<section id="next-week" class="hidden">
+  <div class="wrap">
+    <h2 class="section-title marker" id="next-title">Next Week</h2>
+    <p class="section-sub" id="next-sub"></p>
+    <div class="archive" id="next"></div>
   </div>
 </section>
 
 <div class="tape"></div>
 
-<section id="devlog">
+<section id="past">
   <div class="wrap">
-    <h2 class="section-title marker">Fresh From The Devlog</h2>
-    <p class="section-sub">The honest story of this week's game, including the parts where things caught fire.</p>
-    <h3 class="marker log-week" id="latest-title"></h3>
-    <div class="log" id="latest"></div>
-  </div>
-</section>
-
-<div class="tape"></div>
-
-<section id="archive-sec">
-  <div class="wrap">
-    <h2 class="section-title marker">The Archive Shelf</h2>
-    <p class="section-sub">Every game from every week, playable forever, plus whatever is already cooking in the workshop.</p>
-    <div class="archive" id="archive"></div>
-  </div>
-</section>
-
-<section id="show">
-  <div class="wrap">
-    <h2 class="section-title marker">How The Show Works</h2>
-    <p class="section-sub">A weekly ritual. Mostly safe.</p>
-    <div class="steps">
-      <div class="step"><span class="step-n marker">1</span><h4>The ideas drop</h4><p>Tom (and Noor) announce this week's bad ideas. One game, two games, who knows. Sage nods calmly while panicking internally.</p></div>
-      <div class="step"><span class="step-n marker">2</span><h4>Build week</h4><p>Ideas get pitched, the right tool for the job gets picked (any engine, any genre), a game gets made and a robot gets hired to test it. Every mishap goes into the devlog.</p></div>
-      <div class="step"><span class="step-n marker">3</span><h4>Friday premiere</h4><p>Tom plays them live on <a href="https://www.youtube.com/@bad-sad">YouTube</a>. Chat watches. We find out together if they're fun.</p></div>
-      <div class="step"><span class="step-n marker">4</span><h4>Onto the shelf</h4><p>The games join the archive with their stream replays, downloadable forever. Then new ideas drop.</p></div>
-    </div>
+    <h2 class="section-title marker">Past Weeks</h2>
+    <p class="section-sub">Every Friday stream, with the games it premiered. All of them still playable.</p>
+    <div id="episodes"></div>
+    <div class="stats" id="stats"></div>
   </div>
 </section>
 

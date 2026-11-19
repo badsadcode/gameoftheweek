@@ -96,114 +96,159 @@ function entryHTML(e) {
   </div>`;
 }
 
-function onAir(game, config) {
-  const ch = config.youtube_channel_url;
-  const chBtn = ch
-    ? `<a class="btn yt" href="${esc(ch)}">▶ Subscribe on YouTube</a>`
-    : `<span class="btn yt disabled" title="Channel link coming soon">▶ YouTube channel: link coming soon</span>`;
-  const time = config.stream_time ? `${esc(config.stream_time)} ${esc(config.stream_timezone)}` : "time TBA";
-  let big, small;
-  if (game.youtube_video_id) {
-    big = "Replay is up!";
-    small = `Week ${game.week} was streamed on ${fmtDate(game.stream_date)}.`;
-  } else {
-    const d = daysUntil(game.stream_date);
-    if (d === null) { big = "Stream date TBA"; small = "Tom is checking his calendar."; }
-    else if (d > 1) { big = `Premieres in ${d} days`; small = `${fmtDate(game.stream_date)} · ${time}`; }
-    else if (d === 1) { big = "Premieres TOMORROW"; small = `${fmtDate(game.stream_date)} · ${time}`; }
-    else if (d === 0) { big = "STREAMING TODAY"; small = `${time} · grab snacks`; }
-    else { big = "Replay coming soon"; small = `Streamed on ${fmtDate(game.stream_date)}. The tape is being rewound.`; }
+// ---------------------------------------------------------------- weeks
+// The show runs in weeks: Saturday to Friday we build, Friday Tom streams what we made.
+// A week is every game sharing a "week" number; its stream date is their stream_date (a Friday).
+const DAY = 86400000;
+function today0() { const t = new Date(); t.setHours(0, 0, 0, 0); return t; }
+function shortDate(d) { return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+
+function buildWeeks(games) {
+  const by = {};
+  for (const g of games) (by[g.week] = by[g.week] || []).push(g);
+  return Object.keys(by).map(Number).sort((a, b) => a - b).map((n) => {
+    const gs = by[n].sort((a, b) => a.slug.localeCompare(b.slug));
+    const stream = parseDate(gs.find((g) => g.stream_date)?.stream_date);
+    const start = stream ? new Date(stream - 6 * DAY) : null;
+    const video = gs.find((g) => g.youtube_video_id)?.youtube_video_id || "";
+    return { n, games: gs, stream, start, video };
+  });
+}
+
+// this week = the one whose Sat..Fri contains today; else the next one coming; else the newest
+function pickWeeks(weeks) {
+  const t = today0();
+  let cur = weeks.find((w) => w.start && w.start <= t && t <= w.stream);
+  if (!cur) cur = weeks.find((w) => w.stream && w.stream > t);
+  if (!cur) cur = weeks[weeks.length - 1];
+  const next = weeks.filter((w) => w.n > cur.n);
+  const past = weeks.filter((w) => w.n < cur.n).reverse();
+  return { cur, next, past };
+}
+
+function weekRange(w) {
+  return w.start ? `${w.start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} – ${w.stream.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}` : "dates TBA";
+}
+
+// the 7-day strip: built days ticked off, today glowing, Friday is the show
+function calendar(w) {
+  if (!w.start) return "";
+  const t = today0();
+  let html = "";
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(w.start.getTime() + i * DAY);
+    const isToday = d.getTime() === t.getTime();
+    const past = d < t;
+    const fri = i === 6;
+    const cls = ["cal-day", fri ? "fri" : "", isToday ? "today" : "", past ? "past" : ""].join(" ");
+    const label = fri ? (w.video ? "📼 Replay" : isToday ? "🔴 LIVE TODAY" : "📺 Stream") : isToday ? "🔨 Today" : past ? "✔ Built" : "🔨 Build";
+    html += `<div class="${cls}"><span class="cal-name">${d.toLocaleDateString("en-GB", { weekday: "short" })}</span><span class="cal-date">${d.getDate()}</span><span class="cal-label">${label}</span></div>`;
   }
+  return `<div class="calendar">${html}</div>`;
+}
+
+function countdown(w, config) {
+  const time = config.stream_time ? ` · ${esc(config.stream_time)} ${esc(config.stream_timezone || "")}` : "";
+  if (w.video) return { big: "The replay is up!", small: `Streamed on ${shortDate(w.stream)}.` };
+  const d = w.stream ? Math.round((w.stream - today0()) / DAY) : null;
+  if (d === null) return { big: "Stream date TBA", small: "Tom is checking his calendar." };
+  if (d > 1) return { big: `Stream in ${d} days`, small: `Friday ${shortDate(w.stream)}${time}` };
+  if (d === 1) return { big: "Stream TOMORROW", small: `Friday ${shortDate(w.stream)}${time}` };
+  if (d === 0) return { big: "LIVE TODAY", small: `Grab snacks${time}` };
+  return { big: "Replay coming soon", small: `Streamed on ${shortDate(w.stream)}. The tape is being rewound.` };
+}
+
+// one game in this week's line-up: screenshot, what it is, where it's at, the latest devlog note
+function lineupCard(g, log) {
+  const latest = log[0];
   return `
-  <div class="onair">
-    <div class="onair-light"><span class="dot"></span> ON AIR · FRIDAYS</div>
-    <div class="onair-main">
-      <div class="onair-game">Week ${game.week}: <b>${esc(game.title)}</b></div>
-      <div class="onair-big marker">${big}</div>
-      <div class="onair-small">${small}</div>
+  <article class="lineup" style="--game-accent:${esc(g.accent || "#8fd3ff")}">
+    <a class="lineup-shot" href="game.html?g=${esc(g.slug)}"><img src="games/${esc(g.slug)}/screenshot.png" alt="${esc(g.title)} screenshot" onerror="this.remove()"></a>
+    <div class="lineup-body">
+      <h3 class="marker">${esc(g.emoji || "🎮")} ${esc(g.title)}</h3>
+      <p class="theme">${esc(g.tagline || g.theme)}</p>
+      ${tags(g)}
+      ${progressTrack(g)}
+      ${latest ? `<div class="latest"><span class="chip day">Latest from the devlog · ${esc(latest.day)}</span><b>${esc(latest.title)}</b> <a href="game.html?g=${esc(g.slug)}">Read all ${log.length} entries →</a></div>` : ""}
+      ${buttons(g, false)}
     </div>
-    <div class="onair-cta">${chBtn}</div>
-  </div>`;
+  </article>`;
 }
 
-// ---------------------------------------------------------------- pages
-// Which games are "this week"? The ones with the nearest upcoming (or today's) Friday stream that
-// hasn't happened yet. Several games can share a week. If nothing is upcoming, the newest week.
-function splitWeeks(games) {
-  const upcoming = games.filter((g) => !g.youtube_video_id && (daysUntil(g.stream_date) ?? 0) >= 0);
-  let spotlightWeek
-  if (upcoming.length) {
-    upcoming.sort((a, b) => (daysUntil(a.stream_date) ?? 999) - (daysUntil(b.stream_date) ?? 999) || a.week - b.week);
-    spotlightWeek = upcoming[0].week;
-  } else {
-    spotlightWeek = Math.max(...games.map((g) => g.week));
-  }
-  const spotlight = games.filter((g) => g.week === spotlightWeek);
-  const others = games.filter((g) => g.week !== spotlightWeek).sort((a, b) => b.week - a.week || a.slug.localeCompare(b.slug));
-  return { spotlight, others, spotlightWeek };
-}
-
-function onAirWeek(week, games, config) {
-  if (games.length === 1) return onAir(games[0], config);
-  // several games premiering together: reuse the single-game banner, then list the titles
-  const html = onAir(games[0], config);
-  const titles = games.map((g) => "<b>" + esc(g.title.split(":")[0]) + "</b>").join(" + ");
-  return html.replace(/<div class="onair-game">[\s\S]*?<\/div>/, `<div class="onair-game">Week ${week}: ${titles}</div>`);
+function miniCard(g, status) {
+  return `
+    <a class="mini" href="game.html?g=${esc(g.slug)}" style="--game-accent:${esc(g.accent || "#8fd3ff")}">
+      <img src="games/${esc(g.slug)}/screenshot.png" alt="" onerror="this.remove()">
+      <div class="mini-body">
+        <h4 class="marker">${esc(g.title)}</h4>
+        <p>${esc(g.genre ? g.genre.split("·")[0].trim() : g.theme)}${g.engine_label ? " · " + esc(g.engine_label) : ""}</p>
+        <span class="mini-status">${status}</span>
+      </div>
+    </a>`;
 }
 
 async function renderHome() {
   const [config, games] = await Promise.all([getJSON("config.json", {}), getJSON("games.json", [])]);
-  if (!games.length) { $("#spotlight").innerHTML = "<p>No games yet. The first bad idea is loading…</p>"; return; }
-  const { spotlight, others, spotlightWeek } = splitWeeks(games);
+  if (!games.length) { $("#week-board").innerHTML = "<p>No games yet. The first bad idea is loading…</p>"; return; }
   const logs = await Promise.all(games.map((g) => getJSON(`games/${g.slug}/devlog.json`, [])));
   const logOf = Object.fromEntries(games.map((g, i) => [g.slug, logs[i]]));
+  const weeks = buildWeeks(games);
+  const { cur, next, past } = pickWeeks(weeks);
 
-  const streamed = games.filter((g) => g.youtube_video_id).length;
+  // ---- this week: the event
+  const cd = countdown(cur, config);
+  const ch = config.youtube_channel_url;
+  const n = cur.games.length;
+  $("#week-board").innerHTML = `
+    <div class="wb-head">
+      <div>
+        <span class="tape-label">This week</span>
+        <h2 class="marker wb-title">Week ${cur.n}</h2>
+        <p class="wb-dates">${weekRange(cur)} · ${n} game${n === 1 ? "" : "s"} on the workbench</p>
+      </div>
+      <div class="wb-stream">
+        <div class="onair-light"><span class="dot"></span> FRIDAY STREAM</div>
+        <div class="onair-big marker">${cd.big}</div>
+        <div class="onair-small">${cd.small}</div>
+        ${cur.video ? `<a class="btn yt" href="https://www.youtube.com/watch?v=${esc(cur.video)}">▶ Watch the replay</a>`
+          : ch ? `<a class="btn yt" href="${esc(ch)}">▶ Watch on YouTube</a>` : ""}
+      </div>
+    </div>
+    ${calendar(cur)}
+    <h3 class="marker wb-sub">What we're making this week</h3>
+    ${cur.games.map((g) => lineupCard(g, logOf[g.slug] || [])).join("")}`;
+
+  // ---- next week (games can start early)
+  if (next.length) {
+    $("#next-week").classList.remove("hidden");
+    const nw = next[0];
+    $("#next-title").textContent = `Next Week · Week ${nw.n}`;
+    $("#next-sub").textContent = `${weekRange(nw)}. Already in the workshop, because we couldn't wait.`;
+    $("#next").innerHTML = next.flatMap((w) => w.games.map((g) => miniCard(g, `🔨 Streams Friday ${w.stream ? shortDate(w.stream) : "TBA"}`))).join("");
+  } else {
+    $("#jump-next").remove();
+  }
+
+  // ---- past weeks: one row per Friday stream
+  $("#episodes").innerHTML = past.length ? past.map((w) => `
+    <div class="episode">
+      <div class="ep-head">
+        <span class="ep-n marker">Week ${w.n}</span>
+        <span class="ep-date">${weekRange(w)}</span>
+        ${w.video ? `<a class="btn yt small" href="https://www.youtube.com/watch?v=${esc(w.video)}">📼 Watch the stream</a>` : `<span class="small-note">Replay coming soon</span>`}
+      </div>
+      <div class="archive">${w.games.map((g) => miniCard(g, "🎮 Playable")).join("")}</div>
+    </div>`).join("")
+    : `<div class="episode empty"><p class="marker">Nothing here yet.</p><p>Week ${cur.n} is the first one. After Friday's stream it moves here, with the replay.</p></div>`;
+
+  const streamed = weeks.filter((w) => w.video || (w.stream && w.stream < today0())).length;
   const engines = new Set(games.map((g) => g.engine_label || g.engine).filter(Boolean)).size;
-  const weeks = new Set(games.map((g) => g.week)).size;
-  const entries = logs.reduce((n, l) => n + l.length, 0);
+  const entries = logs.reduce((s, l) => s + l.length, 0);
   $("#stats").innerHTML = `
     <div class="stat"><b>${games.length}</b><span>game${games.length === 1 ? "" : "s"} made</span></div>
-    <div class="stat"><b>${weeks}</b><span>week${weeks === 1 ? "" : "s"} of bad ideas</span></div>
-    <div class="stat"><b>${streamed}</b><span>Friday premiere${streamed === 1 ? "" : "s"} so far</span></div>
+    <div class="stat"><b>${streamed}</b><span>Friday stream${streamed === 1 ? "" : "s"} so far</span></div>
     <div class="stat"><b>${engines}</b><span>engine${engines === 1 ? "" : "s"} used (no favourites)</span></div>
     <div class="stat"><b>${entries}</b><span>devlog confessions</span></div>`;
-
-  $("#onair").innerHTML = onAirWeek(spotlightWeek, spotlight, config);
-  $("#this-week-title").textContent = spotlight.length > 1 ? `This Week's Bad Ideas (${spotlight.length})` : "This Week's Bad Idea";
-  $("#spotlight").innerHTML = spotlight.map((g, i) =>
-    gameCard(g, { ribbon: spotlight.length > 1 ? `WEEK ${g.week} · GAME ${i + 1} OF ${spotlight.length}` : `THIS WEEK · WEEK ${g.week}` })
-  ).join('<div style="height:26px"></div>');
-
-  // latest devlog: the freshest entries across this week's games
-  $("#latest").innerHTML = spotlight.map((g) => {
-    const log = logOf[g.slug];
-    const head = spotlight.length > 1 ? `<h3 class="marker log-week" style="color:${esc(g.accent || "#8fd3ff")}">${esc(g.emoji || "📓")} ${esc(g.title.split(":")[0])}</h3>` : "";
-    return head + log.slice(0, spotlight.length > 1 ? 2 : 3).map(entryHTML).join("") +
-      (log.length > 2 ? `<p class="more"><a class="btn ghost" href="game.html?g=${esc(g.slug)}">Read all ${log.length} entries →</a></p>` : "");
-  }).join("");
-  $("#latest-title").textContent = spotlight.length > 1 ? `Week ${spotlightWeek}` : `${spotlight[0].emoji || "📓"} Week ${spotlightWeek} · ${spotlight[0].title.split(":")[0]}`;
-
-  // archive + whatever comes next, grouped by week
-  const card = (g) => `
-    <a class="mini" href="game.html?g=${esc(g.slug)}" style="--game-accent:${esc(g.accent || "#8fd3ff")}">
-      <img src="games/${esc(g.slug)}/screenshot.png" alt="" onerror="this.remove()">
-      <div class="mini-body">
-        <span class="chip day">Week ${g.week}</span>
-        <h4 class="marker">${esc(g.title)}</h4>
-        <p>${esc(g.theme)}${g.genre ? " · " + esc(g.genre.split("·")[0].trim()) : ""}${g.engine_label ? " · " + esc(g.engine_label) : ""}</p>
-        <span class="mini-status">${g.youtube_video_id ? "📺 Streamed" : (g.week > spotlightWeek ? "🔨 In the workshop" : "🎮 Playable")}</span>
-      </div>
-    </a>`;
-  const maxWeek = Math.max(...games.map((g) => g.week));
-  $("#archive").innerHTML = others.map(card).join("") + `
-    <div class="mini next">
-      <div class="mini-body">
-        <span class="chip day">Week ${maxWeek + 1}</span>
-        <h4 class="marker">???</h4>
-        <p>The next bad ideas are still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
-      </div>
-    </div>`;
 }
 
 async function renderGame() {
@@ -213,7 +258,9 @@ async function renderGame() {
   if (!game) { $("#game").innerHTML = "<p>That game wandered off.</p>"; return; }
   document.title = `${game.title} · Bad Ideas Works`;
   const devlog = await getJSON(`games/${game.slug}/devlog.json`, []);
-  $("#game").innerHTML = gameCard(game, { withDevlog: false });
+  const w = buildWeeks(games).find((x) => x.n === game.week);
+  const streamed = w && w.stream && (w.video || w.stream < today0());
+  $("#game").innerHTML = `<p class="week-line">📅 <b>Week ${game.week}</b> · ${w ? weekRange(w) : ""} · ${streamed ? "📺 streamed" : "📺 streams"} Friday ${w && w.stream ? shortDate(w.stream) : "TBA"}</p>` + gameCard(game, { withDevlog: false });
   $("#video").innerHTML = game.youtube_video_id
     ? `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${esc(game.youtube_video_id)}" title="Friday stream of ${esc(game.title)}" allowfullscreen loading="lazy"></iframe></div>`
     : `<div class="video-wait marker">📺 The Friday stream (${fmtDate(game.stream_date)}) will appear here</div>`;
