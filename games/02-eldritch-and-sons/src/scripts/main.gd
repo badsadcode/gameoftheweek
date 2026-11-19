@@ -265,7 +265,7 @@ func _apply_time_of_day() -> void:
 	sky = sky.lerp(Color(0.65, 0.38, 0.3), dusk * 0.6)
 	world.env.background_color = sky
 	world.env.fog_light_color = sky.lerp(Color(0.3, 0.3, 0.35), 0.3)
-	if world.fancy:
+	if world.hq():
 		world.env.volumetric_fog_albedo = sky.lerp(Color(0.85, 0.87, 0.9), 0.5)
 		world.env.volumetric_fog_density = lerpf(0.07, 0.025, day_k)
 	world.env.ambient_light_energy = lerpf(0.18, 0.65, day_k)
@@ -275,7 +275,7 @@ func _apply_time_of_day() -> void:
 	for l in world.street_lights:
 		l.light_energy = night * 1.6
 		l.light_color = Color(0.65, 0.3, 1.0) if wrong else Color(1, 0.8, 0.5)
-	if wrong and world.fancy: world.env.volumetric_fog_density = 0.11
+	if wrong and world.hq(): world.env.volumetric_fog_density = 0.11
 	if day == 5 and m >= CLOSE_MIN and not flags.get("friday_lamps", false) and started and not night_walk:
 		flags["friday_lamps"] = true
 		Sfx.play("drone", 0.7, 0.6)
@@ -1251,6 +1251,17 @@ func _systems_test() -> void:
 	_chat_votes()
 	ok.call("chat vote banner", ui.vote_box.visible and lc.flags.get("voted", false))
 	GameSettings.data["stream"] = false
+	# --- graphics quality (only meaningful on Forward+)
+	if world.fancy:
+		GameSettings.data["hq"] = false
+		world.apply_quality()
+		var low: bool = not world.env.volumetric_fog_enabled and not world.sun.shadow_enabled and not world.lamps[0].shadow_enabled
+		GameSettings.data["hq"] = true
+		world.apply_quality()
+		var high: bool = world.env.volumetric_fog_enabled and world.sun.shadow_enabled and world.env.ssao_enabled
+		ok.call("quality low/high switches effects", low and high)
+	else:
+		print("[sys] (not Forward+ here: quality toggle skipped)")
 	get_tree().quit()
 
 # --------------------------------------------------------------------------- kerb test (--kerb-test)

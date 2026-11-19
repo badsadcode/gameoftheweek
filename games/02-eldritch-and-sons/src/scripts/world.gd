@@ -227,8 +227,23 @@ func _lights() -> void:
 	# Forward+ has a RenderingDevice; Compatibility (web, old GPUs) doesn't
 	fancy = RenderingServer.get_rendering_device() != null
 	if fancy: _fancy_lighting()
+	apply_quality()
 
 ## the good stuff, desktop only: lamp shadows, light you can see in the fog, glowing eyes
+## true when the heavy Forward+ effects are on (device supports them and the player wants them)
+func hq() -> bool:
+	return fancy and GameSettings.data["hq"]
+
+## Settings > High quality lighting. Off keeps glow + tonemap (cheap), drops shadows, volumetric fog, SSAO.
+func apply_quality() -> void:
+	if not fancy: return
+	var on := hq()
+	for l in lamps: l.shadow_enabled = on
+	sun.shadow_enabled = on
+	env.volumetric_fog_enabled = on
+	env.ssao_enabled = on
+	env.fog_density = 0.018 if on else 0.012
+
 func _fancy_lighting() -> void:
 	for l in lamps:
 		l.shadow_enabled = true

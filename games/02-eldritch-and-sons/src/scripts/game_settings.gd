@@ -9,6 +9,7 @@ static var data := {
 	"voices": true,       # read letters aloud
 	"mouse": 5,           # 1..10
 	"fullscreen": false,
+	"hq": true,           # Forward+ extras: shadows, volumetric fog, SSAO (off = lighter on the GPU)
 	"fx_grain": true,     # gentle film noise (on by default: keeps the creepy)
 	"fx_vhs": false,      # wobbly old tape
 	"fx_crt": false,      # scanlines + rounded vignette

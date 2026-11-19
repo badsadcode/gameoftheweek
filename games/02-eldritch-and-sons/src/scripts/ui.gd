@@ -543,6 +543,7 @@ func _toggle_row(v: VBoxContainer, key: String, text: String) -> void:
 		GameSettings.data[key] = not GameSettings.data[key]
 		GameSettings.save_settings()
 		GameSettings.apply()
+		if key == "hq" and game.world: game.world.apply_quality()
 		b.text = label_of.call())
 	v.add_child(b)
 
@@ -578,6 +579,7 @@ func show_settings(on_back: Callable) -> void:
 	_slider_row(v, "mouse", "Mouse sensitivity", 1, 10)
 	_toggle_row(v, "voices", "Letter voices")
 	if not OS.has_feature("web"): _toggle_row(v, "fullscreen", "Fullscreen")
+	if game.world and game.world.fancy: _toggle_row(v, "hq", "High quality lighting")
 	_toggle_row(v, "stream", "Stream mode (chat decides)")
 	v.add_child(lbl("SCREEN EFFECTS", 22, C_PURPLE))
 	for key in ["fx_grain", "fx_vhs", "fx_crt", "fx_pixels"]:
