@@ -3,5 +3,16 @@
   "youtube_channel_url": "https://www.youtube.com/@bad-sad",
   "stream_day": "Friday",
   "stream_time": "",
-  "stream_timezone": ""
+  "stream_timezone": "",
+  "weeks": {
+    "_how": "Theme of each week, decided at the end of the previous Friday's stream. chosen_by: \"chat\" or \"studio\" (when chat is quiet). Leave theme empty until it's decided.",
+    "1": {
+      "theme": "",
+      "chosen_by": "studio"
+    },
+    "2": {
+      "theme": "",
+      "chosen_by": ""
+    }
+  }
 }

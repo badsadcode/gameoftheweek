@@ -126,6 +126,14 @@ function pickWeeks(weeks) {
   return { cur, next, past };
 }
 
+// config.weeks["N"] = { theme, chosen_by: "chat" | "studio" }
+function themeOf(config, n) {
+  const t = (config.weeks || {})[String(n)] || {};
+  if (!t.theme) return "";
+  const by = t.chosen_by === "chat" ? ' <span class="by">🗳️ picked by chat</span>' : t.chosen_by === "studio" ? ' <span class="by">picked by the studio</span>' : "";
+  return esc(t.theme) + by;
+}
+
 function weekRange(w) {
   return w.start ? `${w.start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} – ${w.stream.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}` : "dates TBA";
 }
@@ -205,6 +213,7 @@ async function renderHome() {
         <span class="tape-label">This week</span>
         <h2 class="marker wb-title">Week ${cur.n}</h2>
         <p class="wb-dates">${weekRange(cur)} · ${n} game${n === 1 ? "" : "s"} on the workbench</p>
+        ${themeOf(config, cur.n) ? `<p class="wb-theme">Theme: <b>${themeOf(config, cur.n)}</b></p>` : ""}
       </div>
       <div class="wb-stream">
         <div class="onair-light"><span class="dot"></span> FRIDAY STREAM</div>
@@ -223,7 +232,8 @@ async function renderHome() {
     $("#next-week").classList.remove("hidden");
     const nw = next[0];
     $("#next-title").textContent = `Next Week · Week ${nw.n}`;
-    $("#next-sub").textContent = `${weekRange(nw)}. Already in the workshop, because we couldn't wait.`;
+    const ntw = themeOf(config, nw.n);
+    $("#next-sub").innerHTML = `${weekRange(nw)}. ${ntw ? "Theme: <b>" + ntw + "</b>. " : ""}Already in the workshop, because we couldn't wait.`;
     $("#next").innerHTML = next.flatMap((w) => w.games.map((g) => miniCard(g, `🔨 Streams Friday ${w.stream ? shortDate(w.stream) : "TBA"}`))).join("");
   } else if (cur.stream) {
     // nothing started yet: tease it
@@ -231,11 +241,14 @@ async function renderHome() {
     const nStart = new Date(cur.stream.getTime() + DAY), nEnd = new Date(cur.stream.getTime() + 7 * DAY);
     $("#next-title").textContent = `Next Week · Week ${cur.n + 1}`;
     $("#next-sub").textContent = `${weekRange({ start: nStart, stream: nEnd })}. Starts the day after the stream.`;
+    const nt = themeOf(config, cur.n + 1);
     $("#next").innerHTML = `
       <div class="mini next">
         <div class="mini-body">
-          <h4 class="marker">???</h4>
-          <p>The next bad ideas are still forming in Tom's head. Sage is nervous. Noor is already excited.</p>
+          <span class="chip day">Theme</span>
+          <h4 class="marker">${nt || "???"}</h4>
+          <p>${nt ? "Now we make games around it. Sage is nervous. Noor is already excited."
+            : `Chat decides at the end of Friday's stream (${shortDate(cur.stream)}). If chat is quiet, we pick. Sage is nervous. Noor is already excited.`}</p>
           <span class="mini-status">📺 Streams Friday ${shortDate(nEnd)}</span>
         </div>
       </div>`;
